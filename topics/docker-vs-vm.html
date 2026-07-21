@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Docker vs VM</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-dark: #0a0a0f;
+  --bg-card: rgba(20, 20, 30, 0.6);
+  --text-main: #f0f0f5;
+  --text-muted: #8b8b9e;
+  
+  --neon-blue: #00f0ff;
+  --neon-purple: #b026ff;
+  --neon-red: #ff3366;
+  --neon-green: #00ff66;
+  --neon-gold: #ffaa00;
+
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  
+  /* Layer Colors */
+  --layer-infra: #1a1a24;
+  --layer-host: #2c2c40;
+  --layer-hyper: #ffaa00;
+  --layer-docker: #00f0ff;
+  --layer-guest: #ff3366;
+  --layer-app: #b026ff;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+
+body {
+  background-color: var(--bg-dark);
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
+  background-size: 30px 30px;
+  color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrap {
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Header & Controls */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 10;
+}
+.header-text { max-width: 600px; }
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(0, 240, 255, 0.1);
+  border-radius: 4px;
+}
+h1 {
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 800;
+  margin: 10px 0;
+  line-height: 1.1;
+  background: linear-gradient(90deg, #fff, var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h1 span {
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.lede {
+  font-size: 17px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* Language Switch */
+.lang-switch {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+.lang-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.lang-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.lang-btn.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--neon-blue);
+}
+
+/* Simulation Arena */
+.arena {
+  width: 100%;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 40px;
+  position: relative;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.architecture {
+  display: flex;
+  gap: 40px;
+  justify-content: space-between;
+  align-items: flex-end;
+  min-height: 400px;
+}
+@media(max-width: 800px) {
+  .architecture { flex-direction: column; align-items: stretch; }
+}
+
+.stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  position: relative;
+}
+.stack-title {
+  position: absolute;
+  top: -40px;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.layer {
+  width: 100%;
+  border-radius: 8px;
+  padding: 15px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  overflow: hidden;
+}
+.layer.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.layer-sub {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.7;
+  display: block;
+  margin-top: 4px;
+}
+
+/* Layer Specifics */
+.l-infra { background: var(--layer-infra); height: 60px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+.l-host { background: var(--layer-host); height: 50px; }
+.l-hyper { background: rgba(255, 170, 0, 0.1); border-color: var(--neon-gold); height: 60px; color: var(--neon-gold); }
+.l-docker { background: rgba(0, 240, 255, 0.1); border-color: var(--neon-blue); height: 40px; color: var(--neon-blue); }
+
+.app-container {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
+}
+.app-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.l-guest {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: var(--neon-red);
+  color: var(--neon-red);
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.l-app {
+  background: rgba(176, 38, 255, 0.15);
+  border-color: var(--neon-purple);
+  color: var(--neon-purple);
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  box-shadow: 0 0 15px rgba(176,38,255,0.2);
+}
+
+/* Boot Animations */
+.boot-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  border-radius: 8px;
+}
+.booting .boot-overlay {
+  opacity: 1;
+}
+.loader {
+  width: 80%;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.loader-bar {
+  width: 0%;
+  height: 100%;
+  background: var(--neon-red);
+}
+.booting .slow-boot .loader-bar { animation: loadSlow 5s linear forwards; }
+.booting .fast-boot .loader-bar { background: var(--neon-green); animation: loadFast 0.2s linear forwards; }
+@keyframes loadSlow { 0%{width:0%;} 100%{width:100%;} }
+@keyframes loadFast { 0%{width:0%;} 100%{width:100%;} }
+
+
+/* Player Controls */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+button.control-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 24px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+button.control-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+button.control-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+button.control-btn.primary {
+  background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+  border: none;
+  box-shadow: 0 5px 15px rgba(176,38,255,0.3);
+}
+button.control-btn.primary:hover:not(:disabled) { box-shadow: 0 8px 25px rgba(0,240,255,0.4); }
+
+.timeline { display: flex; gap: 8px; margin: 0 20px; }
+.dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  transition: all 0.3s;
+}
+.dot.done { background: var(--neon-purple); }
+.dot.now { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); transform: scale(1.3); }
+
+/* Story Panel */
+.story-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+.tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: rgba(255,255,255,0.1); color: #fff;
+}
+.story-title { font-size: 24px; font-weight: 700; margin: 0 0 10px; color: #fff; }
+.story-desc { font-size: 16px; color: var(--text-muted); line-height: 1.6; margin: 0 0 25px; }
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+.data-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 15px;
+}
+.data-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.data-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--neon-blue);
+}
+
+.loading {
+  position: fixed; inset: 0;
+  background: var(--bg-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--neon-blue);
+  z-index: 100;
+  transition: opacity 0.5s;
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">INITIATING VISUALIZATION...</div>
+
+<div class="wrap" id="wrap" style="opacity:0; transition: opacity 1s;">
+  <header>
+    <div class="header-text">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
+  </header>
+
+  <div class="arena">
+    <div class="architecture">
+      <!-- VIRTUAL MACHINE STACK -->
+      <div class="stack" id="stackVM">
+        <div class="stack-title">VIRTUAL MACHINE</div>
+        
+        <div class="app-container">
+          <div class="app-column">
+            <div class="layer l-app" data-step="3">App A<span class="layer-sub">Bins/Libs</span></div>
+            <div class="layer l-guest" data-step="2">Guest OS<span class="layer-sub">Heavy VM OS</span></div>
+          </div>
+          <div class="app-column">
+            <div class="layer l-app" data-step="3">App B<span class="layer-sub">Bins/Libs</span></div>
+            <div class="layer l-guest" data-step="2">Guest OS<span class="layer-sub">Heavy VM OS</span></div>
+          </div>
+          <div class="app-column">
+            <div class="layer l-app" data-step="3">App C<span class="layer-sub">Bins/Libs</span></div>
+            <div class="layer l-guest" data-step="2">Guest OS<span class="layer-sub">Heavy VM OS</span></div>
+          </div>
+        </div>
+
+        <div class="layer l-hyper" data-step="1">Hypervisor<span class="layer-sub">VMware / VirtualBox</span></div>
+        <div class="layer l-host visible" data-step="0">Host OS<span class="layer-sub">Linux / Windows</span></div>
+        <div class="layer l-infra visible" data-step="0">Infrastructure<span class="layer-sub">Physical Hardware</span></div>
+        
+        <!-- Boot overlay for VM -->
+        <div class="boot-overlay slow-boot" id="bootVM">
+          <div class="loader"><div class="loader-bar"></div></div>
+        </div>
+      </div>
+
+      <!-- DOCKER CONTAINER STACK -->
+      <div class="stack" id="stackDocker">
+        <div class="stack-title">DOCKER CONTAINER</div>
+
+        <div class="app-container">
+          <div class="app-column">
+            <div class="layer l-app" data-step="3">App A<span class="layer-sub">Bins/Libs</span></div>
+          </div>
+          <div class="app-column">
+            <div class="layer l-app" data-step="3">App B<span class="layer-sub">Bins/Libs</span></div>
+          </div>
+          <div class="app-column">
+            <div class="layer l-app" data-step="3">App C<span class="layer-sub">Bins/Libs</span></div>
+          </div>
+        </div>
+
+        <div class="layer l-docker" data-step="1">Docker Engine<span class="layer-sub">Container Runtime</span></div>
+        <div class="layer l-host visible" data-step="0">Host OS<span class="layer-sub">Linux / Windows</span></div>
+        <div class="layer l-infra visible" data-step="0">Infrastructure<span class="layer-sub">Physical Hardware</span></div>
+        
+        <!-- Boot overlay for Docker -->
+        <div class="boot-overlay fast-boot" id="bootDocker">
+          <div class="loader"><div class="loader-bar"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="control-btn primary" id="btnNext"></button>
+      <button class="control-btn" id="btnReset" style="margin-left: 20px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+
+</div>
+
+<script>
+const LANGS = ['id', 'en'];
+let currentLang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('lang') || 'en';
+let i18n = null;
+let current = 0;
+const totalSteps = 5;
+
+async function loadData() {
+  const res = await fetch(`i18n/docker-vs-vm.${currentLang}.json`);
+  i18n = await res.json();
+}
+
+function updateStaticUI() {
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + `<span>${i18n.h1Highlight}</span>` + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+  
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnNext').innerHTML = i18n.controls.next;
+  document.getElementById('btnReset').innerHTML = i18n.controls.reset;
+
+  const ls = document.getElementById('langSwitch');
+  ls.innerHTML = '';
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (l === currentLang ? ' active' : '');
+    b.innerText = l.toUpperCase();
+    b.onclick = () => setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+function renderStep() {
+  const data = i18n.steps[current];
+
+  // Logic to show/hide layers based on step
+  document.querySelectorAll('.layer').forEach(layer => {
+    const stepReq = parseInt(layer.getAttribute('data-step'));
+    if(current >= stepReq) {
+      layer.classList.add('visible');
+    } else {
+      layer.classList.remove('visible');
+    }
+  });
+
+  // Boot Animation Logic (Step 4)
+  const stackVM = document.getElementById('stackVM');
+  const stackDocker = document.getElementById('stackDocker');
+  
+  // Reset animation states first
+  stackVM.classList.remove('booting');
+  stackDocker.classList.remove('booting');
+  
+  // Force reflow for animation restart
+  void stackVM.offsetWidth;
+  void stackDocker.offsetWidth;
+
+  if (current === 4) {
+    stackVM.classList.add('booting');
+    stackDocker.classList.add('booting');
+  }
+
+  // Update Text
+  const t = document.getElementById('tag');
+  t.textContent = data.tag;
+  
+  document.getElementById('storyTitle').textContent = data.title;
+  document.getElementById('storyDesc').textContent = data.desc;
+
+  const grid = document.getElementById('dataGrid');
+  grid.innerHTML = '';
+  data.fields.forEach(([lbl, val]) => {
+    grid.innerHTML += `<div class="data-card"><div class="data-label">${lbl}</div><div class="data-val">${val}</div></div>`;
+  });
+
+  // Controls & Dots
+  const track = document.getElementById('stepTrack');
+  track.innerHTML = '';
+  for(let i=0; i<totalSteps; i++){
+    let cls = 'dot';
+    if(i < current) cls += ' done';
+    if(i === current) cls += ' now';
+    track.innerHTML += `<div class="${cls}"></div>`;
+  }
+
+  document.getElementById('btnPrev').disabled = (current === 0);
+  document.getElementById('btnNext').innerHTML = (current === totalSteps - 1) ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').onclick = () => { if(current < totalSteps - 1) { current++; renderStep(); } };
+document.getElementById('btnPrev').onclick = () => { if(current > 0) { current--; renderStep(); } };
+document.getElementById('btnReset').onclick = () => { current = 0; renderStep(); };
+
+async function setLang(l) {
+  if (l === currentLang) return;
+  currentLang = l;
+  localStorage.setItem('lang', l);
+  const u = new URL(window.location);
+  u.searchParams.set('lang', l);
+  history.replaceState(null, '', u);
+  
+  await loadData();
+  updateStaticUI();
+  renderStep();
+  
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: l }, '*');
+  }
+}
+
+async function init() {
+  await loadData();
+  updateStaticUI();
+  renderStep();
+  
+  document.getElementById('loadingNote').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loadingNote').style.display = 'none';
+    document.getElementById('wrap').style.opacity = '1';
+  }, 500);
+}
+
+init();
+</script>
+</body>
+</html>

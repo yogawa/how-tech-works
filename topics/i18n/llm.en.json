@@ -1,0 +1,80 @@
+{
+  "documentTitle": "LLM: How Large Language Models Think",
+  "eyebrow": "AI & Machine Learning",
+  "h1Prefix": "How LLMs ",
+  "h1Highlight": "process language",
+  "h1Suffix": ".",
+  "lede": "Large Language Models like GPT and Claude learn to understand and generate text by processing billions of words. Let's trace a prompt from raw text to model-generated response — step by step.",
+  "pipelineLabel": "LLM INFERENCE PIPELINE",
+  "flowNodes": {
+    "input": "Input",
+    "tokenize": "Tokenize",
+    "embed": "Embed",
+    "attention": "Attention",
+    "output": "Output"
+  },
+  "flowSub": {
+    "input": "Text prompt",
+    "tokenize": "Split into tokens",
+    "embed": "Numeric vectors",
+    "attention": "Token relationships",
+    "output": "Predicted token"
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart",
+    "done": "Done ✓"
+  },
+  "tokenExample": [
+    {"text": "What", "id": "tok_2061"},
+    {"text": "is", "id": "tok_307"},
+    {"text": "LLM", "id": "tok_4821"},
+    {"text": "?", "id": "tok_30"}
+  ],
+  "vectorExample": [
+    {"label": "What", "height": 65},
+    {"label": "is", "height": 40},
+    {"label": "LLM", "height": 85},
+    {"label": "?", "height": 30}
+  ],
+  "attentionNote": "The model weighs relationships between tokens:",
+  "attentionPairs": [
+    {"pair": "What → is", "meaning": "Question word links to verb"},
+    {"pair": "is → LLM", "meaning": "Verb connects to subject"},
+    {"pair": "LLM → ?", "meaning": "Punctuation shapes the answer"}
+  ],
+  "predTokens": ["LLM", "stands", "for", "Large", "Language", "Model"],
+  "steps": [
+    {
+      "tag": "INPUT",
+      "title": "The user types a prompt",
+      "desc": "You type a question or instruction into the chatbot. This raw text is the starting point — the model can't read words directly. It needs a numerical representation first.",
+      "fields": [["Prompt", "What is LLM?"], ["Length", "11 characters"], ["Language", "English"]]
+    },
+    {
+      "tag": "STEP 1",
+      "title": "Tokenization: Breaking text into tokens",
+      "desc": "The text is split into small pieces called 'tokens'. Each token represents a word, sub-word, or character. The model has a fixed vocabulary — each recognized token is matched to a unique number (token ID). Unknown words are broken into smaller sub-tokens.",
+      "fields": [["Input", "What is LLM?"], ["Token Count", "4 tokens"], ["Method", "BPE (Byte-Pair Encoding)"]]
+    },
+    {
+      "tag": "STEP 2",
+      "title": "Embedding: Converting tokens to vectors",
+      "desc": "Each token ID is converted into a high-dimensional numerical vector (e.g. 4096 dimensions). This vector captures the semantic meaning of the token — words with similar meanings end up close together in vector space.",
+      "fields": [["Vector Dimensions", "4096"], ["Memory per Token", "~16 KB"], ["Method", "Lookup Table + Positional Encoding"]]
+    },
+    {
+      "tag": "STEP 3",
+      "title": "Self-Attention: Understanding token relationships",
+      "desc": "This is the core of the Transformer architecture. Each token 'attends to' other tokens to understand context. For example, the token 'is' attends to 'LLM' to understand what the sentence is about. The Query-Key-Value mechanism computes relevance scores between all token pairs in parallel.",
+      "fields": [["Mechanism", "Scaled Dot-Product Attention"], ["Heads", "32 attention heads"], ["Complexity", "O(n²) with token count"]]
+    },
+    {
+      "tag": "STEP 4",
+      "title": "Decoder: Generating the predicted token",
+      "desc": "After passing through many Transformer layers, the model outputs a probability distribution over the entire vocabulary. The token with the highest probability (or one chosen via sampling strategy) becomes the next word in the response. This process repeats token by token until the response is complete.",
+      "fields": [["Output", "LLM stands for Large Language Model"], ["Tokens Generated", "6"], ["Strategy", "Greedy / Top-p Sampling"]]
+    }
+  ]
+}

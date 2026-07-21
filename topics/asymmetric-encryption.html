@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enkripsi Asimetris</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/*
+  Deliberately its own visual identity: a dark "cipher lab" palette (near-black indigo,
+  gold for the public key, violet for the private key) instead of the blue/navy look
+  used by the TCP/IP topic — different topics are free to look nothing alike.
+*/
+:root{
+  --bg:#0B0B14;
+  --panel:rgba(244,241,255,0.045);
+  --panel-border:rgba(244,241,255,0.12);
+  --text:#F4F1FF;
+  --text-dim:rgba(244,241,255,0.68);
+  --text-faint:rgba(244,241,255,0.4);
+  --gold:#FFD166;
+  --violet:#9B5DE5;
+  --teal:#06D6A0;
+  --rose:#EF476F;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(155,93,229,0.16), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(255,209,102,0.10), transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Manrope', sans-serif;
+  min-height:100vh;
+  padding:32px 20px 80px;
+}
+
+.wrap{max-width:1100px;margin:0 auto;}
+
+header{margin-bottom:26px;}
+.header-top{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+.eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:var(--violet);
+  display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--violet);display:inline-block;}
+
+.lang-switch{
+  display:flex; flex-shrink:0;
+  border:1px solid var(--panel-border);
+  border-radius:7px;
+  overflow:hidden;
+}
+.lang-btn{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  background:transparent; border:none;
+  color:var(--text-faint);
+  padding:6px 11px;
+  cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.lang-btn + .lang-btn{border-left:1px solid var(--panel-border);}
+.lang-btn:hover{color:var(--text);}
+.lang-btn.active{background:var(--violet); color:#fff; font-weight:600;}
+
+h1{
+  font-weight:800;
+  font-size:clamp(26px,4vw,42px);
+  line-height:1.1;
+  margin:14px 0 14px;
+  letter-spacing:-0.01em;
+}
+h1 span{color:var(--gold);}
+.lede{
+  font-size:15.5px;
+  line-height:1.65;
+  color:var(--text-dim);
+  max-width:680px;
+}
+
+/* ===== MODE TABS ===== */
+.mode-tabs{
+  display:flex; gap:10px; flex-wrap:wrap;
+  margin:22px 0 22px;
+}
+.mode-tab{
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  font-weight:600;
+  padding:11px 18px;
+  border-radius:8px;
+  border:1.5px solid var(--panel-border);
+  background:var(--panel);
+  color:var(--text-dim);
+  cursor:pointer;
+  transition:all .2s;
+}
+.mode-tab:hover{border-color:var(--text-faint); color:var(--text);}
+.mode-tab.active.mode-encrypt{background:rgba(255,209,102,0.14); border-color:var(--gold); color:var(--gold);}
+.mode-tab.active.mode-sign{background:rgba(155,93,229,0.16); border-color:var(--violet); color:#c9a8f5;}
+
+/* ===== STAGE ===== */
+.stage{
+  position:relative;
+  border:1px solid var(--panel-border);
+  border-radius:10px;
+  background:var(--panel);
+  padding:28px 24px 20px;
+  margin-bottom:22px;
+  overflow:hidden;
+}
+.stage::before{
+  content:attr(data-fig-caption);
+  position:absolute; top:12px; right:16px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px; letter-spacing:0.1em;
+  color:var(--text-faint);
+}
+
+.path-row{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:150px;
+  margin-bottom:6px;
+}
+.node{
+  position:relative;
+  z-index:3;
+  width:120px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  text-align:center;
+}
+.node-icon{
+  width:56px;height:56px;
+  border:1.5px solid var(--panel-border);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+  transition:border-color .3s, box-shadow .3s;
+}
+.node-icon svg{width:26px;height:26px;stroke:var(--text);fill:none;stroke-width:1.6;}
+.node-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.03em;color:var(--text-dim);}
+.node-label b{color:var(--text);display:block;font-size:12.5px;margin-bottom:2px;font-family:'Manrope',sans-serif;}
+.node.active .node-icon{border-color:var(--gold); box-shadow:0 0 0 5px rgba(255,209,102,0.14);}
+.node.active.role-private .node-icon{border-color:var(--violet); box-shadow:0 0 0 5px rgba(155,93,229,0.16);}
+
+.wire{
+  position:absolute;
+  left:85px; right:85px; top:28px;
+  height:0;
+  border-top:2px dashed rgba(244,241,255,0.18);
+  z-index:1;
+}
+
+.carrier{
+  position:absolute;
+  top:6px;
+  transform:translateX(-50%);
+  z-index:4;
+  opacity:0;
+  transition:left .6s cubic-bezier(.65,0,.35,1), opacity .3s ease;
+  white-space:nowrap;
+  font-family:'JetBrains Mono', monospace;
+  font-size:11.5px;
+  font-weight:600;
+  padding:7px 12px;
+  border-radius:20px;
+  background:var(--bg);
+}
+.carrier.show{opacity:1;}
+.carrier.carrier-public{background:var(--gold); color:#241c02; border:none;}
+.carrier.carrier-cipher{background:var(--bg); color:var(--gold); border:1.5px solid var(--gold);}
+.carrier.carrier-sig{background:var(--bg); color:#d6b8fb; border:1.5px solid var(--violet);}
+
+/* ===== CONTROLS ===== */
+.controls{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--panel-border);
+}
+button.ctrl{
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px;
+  background:transparent;
+  border:1px solid var(--panel-border);
+  color:var(--text);
+  padding:9px 16px;
+  border-radius:7px;
+  cursor:pointer;
+  transition:all .2s;
+}
+button.ctrl:hover{border-color:var(--gold); color:var(--gold);}
+button.ctrl:disabled{opacity:0.3; cursor:not-allowed;}
+button.ctrl.primary{background:var(--gold); border-color:var(--gold); color:#241c02; font-weight:700;}
+button.ctrl.primary:hover{background:#ffdb85; color:#241c02;}
+.step-track{flex:1; min-width:180px; display:flex; gap:4px;}
+.step-dot{flex:1; height:4px; background:rgba(244,241,255,0.12); border-radius:2px; transition:background .3s;}
+.step-dot.done{background:var(--violet);}
+.step-dot.now{background:var(--gold);}
+.step-counter{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); white-space:nowrap;}
+
+/* ===== PANELS ===== */
+.panels{
+  display:grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap:16px;
+  margin-bottom:22px;
+  align-items:start;
+}
+@media (max-width:760px){ .panels{grid-template-columns:1fr;} }
+
+.card{
+  border:1px solid var(--panel-border);
+  background:var(--panel);
+  border-radius:10px;
+  padding:22px 24px;
+}
+.card-tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  padding:3px 9px;
+  border-radius:20px;
+  display:inline-block;
+  margin-bottom:12px;
+  border:1px solid var(--panel-border);
+  color:var(--text-dim);
+}
+.tag-start{background:rgba(244,241,255,0.06); color:var(--text-dim); border-color:rgba(244,241,255,0.25);}
+.tag-key{background:rgba(255,209,102,0.14); color:var(--gold); border-color:rgba(255,209,102,0.5);}
+.tag-secret{background:rgba(155,93,229,0.16); color:#c9a8f5; border-color:rgba(155,93,229,0.5);}
+.tag-transit{background:rgba(244,241,255,0.05); color:var(--text-dim); border-color:rgba(244,241,255,0.2);}
+.tag-done{background:rgba(6,214,160,0.14); color:var(--teal); border-color:rgba(6,214,160,0.5);}
+
+.card h2{font-size:19px; font-weight:700; margin:0 0 10px;}
+.card p{font-size:14.5px; line-height:1.65; color:var(--text-dim); margin:0 0 14px;}
+
+.field-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px;}
+.field-list li{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+  color:var(--text-dim);
+  display:flex; justify-content:space-between; gap:12px;
+  border-bottom:1px dashed var(--panel-border);
+  padding-bottom:6px;
+}
+.field-list li span:first-child{color:var(--text-faint);}
+.field-list li span:last-child{color:var(--text); text-align:right;}
+
+/* keyring card */
+.keyring{display:flex; flex-direction:column; gap:10px; margin-top:4px;}
+.key-chip{
+  padding:12px 14px; border-radius:8px;
+  border:1.5px solid var(--panel-border);
+  background:var(--bg);
+  display:flex; align-items:center; gap:12px;
+  opacity:0.4;
+  transition:all .35s ease;
+}
+.key-chip.active{opacity:1;}
+.key-chip[data-key="public"].active{border-color:var(--gold); box-shadow:0 0 0 3px rgba(255,209,102,0.12);}
+.key-chip[data-key="private"].active{border-color:var(--violet); box-shadow:0 0 0 3px rgba(155,93,229,0.14);}
+.key-chip-icon{width:30px; height:30px; flex-shrink:0;}
+.key-chip[data-key="public"] .key-chip-icon{color:var(--gold);}
+.key-chip[data-key="private"] .key-chip-icon{color:var(--violet);}
+.key-chip-icon svg{width:100%; height:100%; fill:none; stroke:currentColor; stroke-width:1.6;}
+.key-chip-body{flex:1; min-width:0;}
+.key-chip-label{font-weight:700; font-size:13.5px; margin-bottom:2px;}
+.key-chip-note{font-size:11px; color:var(--text-faint); margin-bottom:4px;}
+.key-chip-holder{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--text-dim); line-height:1.4;}
+
+/* tamper demo */
+.tamper-demo{
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px dashed var(--panel-border);
+}
+.tamper-toggle{
+  display:flex; align-items:center; gap:9px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  color:var(--text-dim);
+  cursor:pointer;
+  margin-bottom:14px;
+  user-select:none;
+}
+.tamper-toggle input{width:15px; height:15px; accent-color:var(--rose); cursor:pointer;}
+.hash-row{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  padding:8px 0;
+  border-bottom:1px dashed var(--panel-border);
+}
+.hash-row .hlabel{color:var(--text-faint);}
+.hash-row .hval{color:var(--text); font-weight:600;}
+.match-badge{
+  margin-top:12px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12.5px;
+  font-weight:600;
+  padding:9px 12px;
+  border-radius:7px;
+  text-align:center;
+}
+.match-badge.ok{background:rgba(6,214,160,0.14); color:var(--teal); border:1px solid rgba(6,214,160,0.4);}
+.match-badge.fail{background:rgba(239,71,111,0.14); color:var(--rose); border:1px solid rgba(239,71,111,0.4);}
+
+/* ===== LEGEND ===== */
+.legend{
+  border:1px solid var(--panel-border);
+  background:var(--panel);
+  border-radius:10px;
+  padding:22px 24px;
+  margin-bottom:22px;
+}
+.legend h3{font-size:16.5px; font-weight:700; margin:0 0 4px;}
+.legend .sub{font-size:13px; color:var(--text-dim); margin-bottom:16px;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{
+  text-align:left; font-family:'JetBrains Mono',monospace; font-weight:600;
+  font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--text-faint); padding:8px 10px; border-bottom:1px solid var(--panel-border);
+}
+td{padding:10px 10px; border-bottom:1px solid rgba(244,241,255,0.06); vertical-align:top; line-height:1.5; color:var(--text-dim);}
+td:first-child{color:var(--text); font-weight:600;}
+
+footer{
+  text-align:center;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  color:var(--text-faint);
+  margin-top:30px;
+  letter-spacing:0.03em;
+}
+
+.loading-note{
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  color:var(--text-faint);
+  padding:40px 0;
+  text-align:center;
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap" style="display:none;">
+
+  <header>
+    <div class="header-top">
+      <div class="eyebrow" id="eyebrow"></div>
+      <div class="lang-switch" id="langSwitch"></div>
+    </div>
+    <h1 id="h1"></h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <div class="mode-tabs" id="modeTabs"></div>
+
+  <section class="stage" id="stage">
+    <div class="path-row" id="pathRow">
+      <div class="node" id="nodeAlice">
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+        </div>
+        <div class="node-label" id="aliceLabel"></div>
+      </div>
+
+      <div class="node" id="nodeBob">
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+        </div>
+        <div class="node-label" id="bobLabel"></div>
+      </div>
+
+      <div class="wire"></div>
+      <div class="carrier" id="carrier"></div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl" id="btnPrev"></button>
+      <button class="ctrl primary" id="btnNext"></button>
+      <div class="step-track" id="stepTrack"></div>
+      <div class="step-counter" id="stepCounter"></div>
+      <button class="ctrl" id="btnReset"></button>
+    </div>
+  </section>
+
+  <section class="panels">
+    <div class="card">
+      <span class="card-tag" id="cardTag">TAG</span>
+      <h2 id="cardTitle">&nbsp;</h2>
+      <p id="cardDesc">&nbsp;</p>
+      <ul class="field-list" id="cardFields"></ul>
+
+      <div class="tamper-demo" id="tamperDemo" style="display:none;">
+        <label class="tamper-toggle">
+          <input type="checkbox" id="tamperToggle">
+          <span id="tamperToggleLabel"></span>
+        </label>
+        <div class="hash-row">
+          <span class="hlabel" id="computedHashLabel"></span>
+          <span class="hval" id="computedHashVal"></span>
+        </div>
+        <div class="hash-row" style="border-bottom:none;">
+          <span class="hlabel" id="signatureHashLabel"></span>
+          <span class="hval" id="signatureHashVal"></span>
+        </div>
+        <div class="match-badge" id="matchBadge"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-start" id="keyringCardTag">KEYRING</span>
+      <div class="keyring" id="keyring">
+        <div class="key-chip" data-key="public" id="chipPublic">
+          <div class="key-chip-icon"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 13l3 3M13 16l2.5 2.5"/></svg></div>
+          <div class="key-chip-body">
+            <div class="key-chip-label" id="publicLabel"></div>
+            <div class="key-chip-note" id="publicNote"></div>
+            <div class="key-chip-holder" id="publicHolder"></div>
+          </div>
+        </div>
+        <div class="key-chip" data-key="private" id="chipPrivate">
+          <div class="key-chip-icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+          <div class="key-chip-body">
+            <div class="key-chip-label" id="privateLabel"></div>
+            <div class="key-chip-note" id="privateNote"></div>
+            <div class="key-chip-holder" id="privateHolder"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="legend">
+    <h3 id="legendTitle"></h3>
+    <div class="sub" id="legendSub"></div>
+    <table>
+      <thead><tr id="legendHeaderRow"></tr></thead>
+      <tbody id="legendBody"></tbody>
+    </table>
+  </section>
+
+  <footer id="footerText"></footer>
+</div>
+
+<div class="loading-note" id="loadingNote">Loading…</div>
+
+<script>
+const LANGS = ['id', 'en'];
+const DEFAULT_LANG = 'en';
+const TOPIC_KEY = 'asymmetric-encryption';
+
+// Structural (non-translatable) per-step state. Text comes from i18n.encryptSteps / i18n.signSteps.
+// pos: 0 = at Alice's node, 100 = at Bob's node (shared by both flows; sign flow simply
+// authors its positions running from 100 down to 0 since Bob is the one sending).
+const encryptStructure = [
+  { pos:100, active:'bob',   role:null,      carrier:null,     tagClass:'tag-start',  keyActive:'both',    publicShared:false },
+  { pos:65,  active:'bob',   role:null,      carrier:'public', tagClass:'tag-key',    keyActive:'public',  publicShared:true },
+  { pos:0,   active:'alice', role:null,      carrier:'public', tagClass:'tag-key',    keyActive:'public',  publicShared:true },
+  { pos:0,   active:'alice', role:null,      carrier:null,     tagClass:'tag-key',    keyActive:'public',  publicShared:true },
+  { pos:50,  active:null,    role:null,      carrier:'cipher', tagClass:'tag-transit',keyActive:null,      publicShared:true },
+  { pos:100, active:'bob',   role:'private', carrier:'cipher', tagClass:'tag-secret', keyActive:'private', publicShared:true },
+  { pos:100, active:'bob',   role:null,      carrier:null,     tagClass:'tag-done',   keyActive:null,      publicShared:true }
+];
+
+const signStructure = [
+  { pos:100, active:'bob',   role:null,      carrier:null,  tagClass:'tag-start',  keyActive:'both',    publicShared:true },
+  { pos:100, active:'bob',   role:null,      carrier:null,  tagClass:'tag-transit',keyActive:null,      publicShared:true },
+  { pos:100, active:'bob',   role:'private', carrier:null,  tagClass:'tag-secret', keyActive:'private', publicShared:true },
+  { pos:50,  active:null,    role:null,      carrier:'sig', tagClass:'tag-transit',keyActive:null,      publicShared:true },
+  { pos:0,   active:'alice', role:null,      carrier:'sig', tagClass:'tag-key',    keyActive:'public',  publicShared:true, hasTamperDemo:true },
+  { pos:0,   active:'alice', role:null,      carrier:null,  tagClass:'tag-done',   keyActive:null,      publicShared:true }
+];
+
+function getQueryLang(){
+  const params = new URLSearchParams(window.location.search);
+  const lang = params.get('lang');
+  return LANGS.includes(lang) ? lang : null;
+}
+
+let currentLang = getQueryLang() || localStorage.getItem('lang') || DEFAULT_LANG;
+let i18n = null;
+let currentMode = 'encrypt';
+let current = 0;
+let steps = [];
+
+async function loadI18n(lang){
+  const res = await fetch('i18n/' + TOPIC_KEY + '.' + lang + '.json');
+  return res.json();
+}
+
+function buildSteps(){
+  const structure = currentMode === 'encrypt' ? encryptStructure : signStructure;
+  const textSteps = currentMode === 'encrypt' ? i18n.encryptSteps : i18n.signSteps;
+  steps = structure.map((s, i) => ({ ...s, ...textSteps[i] }));
+}
+
+function renderLangSwitch(){
+  const el = document.getElementById('langSwitch');
+  el.innerHTML = '';
+  LANGS.forEach(code => {
+    const btn = document.createElement('button');
+    btn.className = 'lang-btn' + (code === currentLang ? ' active' : '');
+    btn.textContent = code.toUpperCase();
+    btn.addEventListener('click', () => switchLanguage(code));
+    el.appendChild(btn);
+  });
+}
+
+function renderModeTabs(){
+  const el = document.getElementById('modeTabs');
+  el.innerHTML = '';
+  [['encrypt', i18n.modeTabs.encrypt], ['sign', i18n.modeTabs.sign]].forEach(([mode, label]) => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-tab mode-' + mode + (mode === currentMode ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => switchMode(mode));
+    el.appendChild(btn);
+  });
+}
+
+function switchMode(mode){
+  if(mode === currentMode) return;
+  currentMode = mode;
+  current = 0;
+  tamperToggle.checked = false;
+  buildSteps();
+  renderModeTabs();
+  buildStepDots();
+  updateNodeSubs();
+  render();
+}
+
+function updateNodeSubs(){
+  document.getElementById('aliceLabel').innerHTML =
+    '<b>' + i18n.nodes.alice.label + '</b>' + (currentMode === 'encrypt' ? i18n.nodes.alice.subEncrypt : i18n.nodes.alice.subSign);
+  document.getElementById('bobLabel').innerHTML = '<b>' + i18n.nodes.bob.label + '</b>' + i18n.nodes.bob.sub;
+}
+
+function renderStatic(){
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + '<span>' + i18n.h1Highlight + '</span>' + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+  document.getElementById('stage').setAttribute('data-fig-caption', i18n.figCaption);
+
+  updateNodeSubs();
+
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnReset').textContent = i18n.controls.reset;
+
+  document.getElementById('keyringCardTag').textContent = i18n.keyring.cardTag;
+  document.getElementById('publicLabel').textContent = i18n.keyring.publicLabel;
+  document.getElementById('publicNote').textContent = i18n.keyring.publicNote;
+  document.getElementById('privateLabel').textContent = i18n.keyring.privateLabel;
+  document.getElementById('privateNote').textContent = i18n.keyring.privateNote;
+  document.getElementById('privateHolder').textContent = i18n.keyring.holderPrivate;
+
+  document.getElementById('tamperToggleLabel').textContent = i18n.tamperDemo.toggleLabel;
+  document.getElementById('computedHashLabel').textContent = i18n.tamperDemo.computedHashLabel;
+  document.getElementById('signatureHashLabel').textContent = i18n.tamperDemo.signatureHashLabel;
+  document.getElementById('signatureHashVal').textContent = i18n.tamperDemo.hashSignature;
+
+  document.getElementById('legendTitle').textContent = i18n.legend.title;
+  document.getElementById('legendSub').textContent = i18n.legend.sub;
+
+  const headerRow = document.getElementById('legendHeaderRow');
+  headerRow.innerHTML = '';
+  i18n.legend.headers.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+
+  const body = document.getElementById('legendBody');
+  body.innerHTML = '';
+  i18n.legend.rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + row.flow + '</td>' +
+      '<td>' + row.startAction + '</td>' +
+      '<td>' + row.endAction + '</td>' +
+      '<td>' + row.example + '</td>';
+    body.appendChild(tr);
+  });
+
+  document.getElementById('footerText').innerHTML = i18n.footer;
+
+  renderLangSwitch();
+  renderModeTabs();
+}
+
+const carrier = document.getElementById('carrier');
+const stepCounter = document.getElementById('stepCounter');
+const stepTrack = document.getElementById('stepTrack');
+const cardTag = document.getElementById('cardTag');
+const cardTitle = document.getElementById('cardTitle');
+const cardDesc = document.getElementById('cardDesc');
+const cardFields = document.getElementById('cardFields');
+const tamperDemo = document.getElementById('tamperDemo');
+const tamperToggle = document.getElementById('tamperToggle');
+const computedHashVal = document.getElementById('computedHashVal');
+const matchBadge = document.getElementById('matchBadge');
+
+const nodeIds = { alice: 'nodeAlice', bob: 'nodeBob' };
+const chipPublic = document.getElementById('chipPublic');
+const chipPrivate = document.getElementById('chipPrivate');
+
+function buildStepDots(){
+  stepTrack.innerHTML = '';
+  steps.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot';
+    dot.id = 'dot' + i;
+    stepTrack.appendChild(dot);
+  });
+}
+
+function renderTamperDemo(s){
+  if(!s.hasTamperDemo){
+    tamperDemo.style.display = 'none';
+    return;
+  }
+  tamperDemo.style.display = 'block';
+  const tampered = tamperToggle.checked;
+  const computed = tampered ? i18n.tamperDemo.hashTampered : i18n.tamperDemo.hashOriginal;
+  computedHashVal.textContent = computed;
+  const isMatch = computed === i18n.tamperDemo.hashSignature;
+  matchBadge.textContent = isMatch ? i18n.tamperDemo.matchBadge : i18n.tamperDemo.mismatchBadge;
+  matchBadge.className = 'match-badge ' + (isMatch ? 'ok' : 'fail');
+}
+
+function render(){
+  const s = steps[current];
+
+  const row = document.getElementById('pathRow');
+  const rowWidth = row.clientWidth;
+  const leftMargin = 85;
+  const usableWidth = rowWidth - leftMargin * 2;
+  const xPos = leftMargin + (usableWidth * (s.pos / 100));
+  carrier.style.left = xPos + 'px';
+
+  if(s.carrier){
+    carrier.className = 'carrier show carrier-' + s.carrier;
+    carrier.textContent = i18n.carrierLabels[s.carrier];
+  } else {
+    carrier.className = 'carrier';
+  }
+
+  Object.values(nodeIds).forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('active', 'role-private');
+  });
+  if(s.active){
+    const el = document.getElementById(nodeIds[s.active]);
+    el.classList.add('active');
+    if(s.role === 'private') el.classList.add('role-private');
+  }
+
+  cardTag.textContent = s.tag;
+  cardTag.className = 'card-tag ' + s.tagClass;
+  cardTitle.textContent = s.title;
+  cardDesc.textContent = s.desc;
+  cardFields.innerHTML = '';
+  s.fields.forEach(([k, v]) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<span>' + k + '</span><span>' + v + '</span>';
+    cardFields.appendChild(li);
+  });
+
+  renderTamperDemo(s);
+
+  chipPublic.classList.toggle('active', s.keyActive === 'public' || s.keyActive === 'both');
+  chipPrivate.classList.toggle('active', s.keyActive === 'private' || s.keyActive === 'both');
+  document.getElementById('publicHolder').textContent =
+    s.publicShared ? i18n.keyring.holderPublicShared : i18n.keyring.holderPublicBefore;
+
+  steps.forEach((_, i) => {
+    const dot = document.getElementById('dot' + i);
+    dot.classList.remove('done', 'now');
+    if(i < current) dot.classList.add('done');
+    if(i === current) dot.classList.add('now');
+  });
+
+  stepCounter.textContent = i18n.controls.stepCounter.replace('{n}', current + 1).replace('{total}', steps.length);
+  document.getElementById('btnPrev').disabled = current === 0;
+  document.getElementById('btnNext').disabled = current === steps.length - 1;
+  document.getElementById('btnNext').innerHTML = current === steps.length - 1 ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').addEventListener('click', () => {
+  if(current < steps.length - 1){ current++; render(); }
+});
+document.getElementById('btnPrev').addEventListener('click', () => {
+  if(current > 0){ current--; render(); }
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  current = 0; render();
+});
+tamperToggle.addEventListener('change', () => render());
+window.addEventListener('resize', render);
+
+async function switchLanguage(lang){
+  if(lang === currentLang) return;
+  currentLang = lang;
+  localStorage.setItem('lang', lang);
+  const url = new URL(window.location.href);
+  url.searchParams.set('lang', lang);
+  history.replaceState(null, '', url);
+
+  i18n = await loadI18n(lang);
+  buildSteps();
+  renderStatic();
+  render();
+
+  if(window.parent !== window){
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: lang }, '*');
+  }
+}
+
+(async function init(){
+  i18n = await loadI18n(currentLang);
+  buildSteps();
+  renderStatic();
+  buildStepDots();
+  render();
+  document.getElementById('loadingNote').style.display = 'none';
+  document.getElementById('wrap').style.display = 'block';
+})();
+</script>
+</body>
+</html>

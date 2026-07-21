@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Event-Driven Architecture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #0D0817;
+  --panel: rgba(251, 146, 60, 0.05);
+  --panel-border: rgba(251, 146, 60, 0.14);
+  --text: #F5EEFF;
+  --text-dim: rgba(245, 238, 255, 0.68);
+  --text-faint: rgba(245, 238, 255, 0.4);
+
+  --event: #FB923C;
+  --subscriber: #22D3EE;
+  --queue: #FDE047;
+  --danger: #F87171;
+  --orchestrator: #C084FC;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 12% -10%, rgba(251, 146, 60, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 90% 15%, rgba(192, 132, 252, 0.08) 0%, transparent 50%);
+  color: var(--text);
+  font-family: 'Urbanist', sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrap { max-width: 1200px; width: 100%; }
+
+/* Header */
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.header-text { max-width: 660px; }
+.eyebrow {
+  font-family: 'Space Mono', monospace; font-size: 12px; color: var(--event);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: inline-block;
+  padding: 4px 10px; background: rgba(251, 146, 60, 0.1); border-radius: 4px; font-weight: 700;
+}
+h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; margin: 10px 0; line-height: 1.12; letter-spacing: -0.01em; }
+h1 span { color: var(--subscriber); }
+.lede { font-size: 16.5px; color: var(--text-dim); line-height: 1.65; }
+
+.lang-switch { display: flex; background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.lang-btn { font-family: 'Space Mono', monospace; font-size: 12px; background: transparent; border: none; color: var(--text-faint); padding: 8px 16px; cursor: pointer; transition: all .2s; }
+.lang-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.lang-btn.active { background: var(--event); color: #2b1204; font-weight: 700; }
+
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  background: var(--panel); border: 1.5px solid var(--panel-border); color: var(--text-dim);
+  padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13.5px;
+  font-family: 'Urbanist', sans-serif; transition: all .2s;
+}
+.tab:hover { border-color: var(--event); color: var(--text); }
+.tab.active { background: rgba(251,146,60,0.1); border-color: var(--event); color: var(--event); }
+
+/* Arena */
+.arena {
+  width: 100%; background: var(--panel); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 40px 36px; position: relative;
+  margin-bottom: 32px; min-height: 360px; display: flex; flex-direction: column;
+  backdrop-filter: blur(16px);
+}
+.case-container { display: none; flex: 1; flex-direction: column; justify-content: center; width: 100%; }
+.case-container.active { display: flex; }
+
+/* Shared service box */
+.svc-box { background: var(--bg); border: 1.5px solid var(--panel-border); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 108px; text-align: center; flex-shrink: 0; transition: all .35s; opacity: .55; }
+.svc-box .svc-icon { font-size: 19px; }
+.svc-box .svc-label { font-weight: 700; font-size: 12px; color: var(--text); }
+.svc-box.registered, .svc-box.neutral { opacity: 1; }
+.svc-box.active { opacity: 1; border-color: var(--event); box-shadow: 0 0 0 4px rgba(251,146,60,0.14); }
+.svc-box.sub-active { opacity: 1; border-color: var(--subscriber); box-shadow: 0 0 0 4px rgba(34,211,238,0.14); }
+.svc-box.new { opacity: 1; border-color: var(--subscriber); border-style: dashed; box-shadow: 0 0 0 4px rgba(34,211,238,0.18); }
+.svc-box.down { opacity: .5; border-color: var(--danger); border-style: dashed; }
+.svc-box.danger { opacity: 1; border-color: var(--danger); box-shadow: 0 0 0 4px rgba(248,113,113,0.16); }
+.svc-box.orchestrator { opacity: 1; border-color: var(--orchestrator); box-shadow: 0 0 0 4px rgba(192,132,252,0.14); }
+
+/* PUB/SUB */
+.ps-row { display: flex; align-items: center; gap: 6px; }
+.ps-wire { flex: 1; position: relative; height: 60px; min-width: 30px; }
+.wire-line { position: absolute; top: 50%; left: 0; right: 0; height: 2px; background: var(--panel-border); }
+.event-pill { position: absolute; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; font-family: 'Space Mono', monospace; font-size: 10.5px; font-weight: 600; padding: 6px 12px; border-radius: 14px; background: var(--bg); border: 1.5px solid var(--panel-border); color: var(--text-dim); opacity: 0; z-index: 4; transition: left .55s cubic-bezier(.65,0,.35,1), opacity .3s; }
+.event-pill.show { opacity: 1; }
+.event-pill.event { border-color: var(--event); color: var(--event); background: rgba(251,146,60,0.12); }
+.ps-subs { display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 760px) { .ps-row { flex-direction: column; } .ps-wire { width: 100%; } }
+
+/* QUEUE */
+.q-row { display: flex; align-items: center; gap: 24px; justify-content: center; flex-wrap: wrap; }
+.q-queue { background: var(--bg); border: 1.5px solid var(--panel-border); border-radius: 12px; padding: 16px 20px; min-width: 190px; text-align: center; }
+.q-queue-label { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+.q-slots { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; min-height: 18px; max-width: 150px; margin: 0 auto; }
+.q-slot { width: 15px; height: 15px; border-radius: 4px; background: var(--queue); }
+
+/* CHOREOGRAPHY / RESILIENCE flow rows */
+.cx-row { margin-bottom: 24px; transition: opacity .35s; }
+.cx-row.dim { opacity: .4; }
+.cx-row-label { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 12px; }
+.cx-track { display: flex; align-items: center; flex-wrap: wrap; gap: 0; row-gap: 12px; }
+.cx-arrow { position: relative; width: 44px; height: 2px; background: var(--text-faint); flex-shrink: 0; margin-top: 16px; }
+.cx-arrow.event { background: transparent; border-top: 2px dashed var(--event); }
+.cx-arrow.call { background: var(--orchestrator); height: 2.5px; }
+.cx-arrow.fail { background: transparent; border-top: 2.5px dashed var(--danger); }
+.cx-arrow-label { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-faint); }
+.cx-arrow.event .cx-arrow-label { color: var(--event); }
+.cx-arrow.call .cx-arrow-label { color: var(--orchestrator); }
+.cx-arrow.fail .cx-arrow-label { color: var(--danger); }
+
+/* Player Controls */
+.controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: auto; padding-top: 34px; flex-wrap: wrap; }
+button.control-btn { background: var(--bg); border: 1.5px solid var(--panel-border); color: var(--text); font-family: 'Urbanist', sans-serif; font-weight: 600; font-size: 13.5px; padding: 11px 22px; border-radius: 30px; cursor: pointer; transition: all .2s; }
+button.control-btn:hover:not(:disabled) { border-color: var(--event); color: var(--event); }
+button.control-btn:disabled { opacity: .35; cursor: not-allowed; }
+button.control-btn.primary { background: var(--event); border-color: var(--event); color: #2b1204; box-shadow: 0 5px 15px rgba(251,146,60,0.25); }
+button.control-btn.primary:hover:not(:disabled) { background: #fdba74; color: #2b1204; }
+
+.timeline { display: flex; gap: 8px; margin: 0 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--panel-border); transition: all .3s; }
+.dot.done { background: var(--orchestrator); }
+.dot.now { background: var(--event); box-shadow: 0 0 0 4px rgba(251,146,60,0.18); transform: scale(1.2); }
+
+/* Story panel */
+.story-panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 28px 30px; backdrop-filter: blur(16px); }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .03em; margin-bottom: 14px; background: rgba(251,146,60,0.1); color: var(--event); }
+.story-title { font-size: 22px; font-weight: 700; margin: 0 0 10px; color: var(--text); }
+.story-desc { font-size: 15px; color: var(--text-dim); line-height: 1.7; margin: 0 0 22px; }
+
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.data-card { background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px; padding: 14px 15px; }
+.data-label { font-family: 'Space Mono', monospace; font-size: 10.5px; color: var(--text-faint); margin-bottom: 5px; letter-spacing: .02em; }
+.data-val { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.5; }
+
+.loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; color: var(--event); z-index: 100; transition: opacity .5s; }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">WIRING UP THE EVENT BUS...</div>
+
+<div class="wrap" id="wrap" style="opacity:0; transition: opacity 1s;">
+  <header>
+    <div class="header-text">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="setCase('pubsub')" id="tab-pubsub"></div>
+    <div class="tab" onclick="setCase('queue')" id="tab-queue"></div>
+    <div class="tab" onclick="setCase('choreography')" id="tab-choreography"></div>
+    <div class="tab" onclick="setCase('resilience')" id="tab-resilience"></div>
+  </div>
+
+  <div class="arena">
+    <!-- PUB/SUB -->
+    <div class="case-container" id="c-pubsub">
+      <div class="ps-row" id="ps-row"></div>
+    </div>
+
+    <!-- QUEUE -->
+    <div class="case-container" id="c-queue">
+      <div class="q-row" id="q-row"></div>
+    </div>
+
+    <!-- CHOREOGRAPHY vs ORCHESTRATION -->
+    <div class="case-container" id="c-choreography">
+      <div id="cx-wrap"></div>
+    </div>
+
+    <!-- RESILIENCE -->
+    <div class="case-container" id="c-resilience">
+      <div id="res-wrap"></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="control-btn primary" id="btnNext"></button>
+      <button class="control-btn" id="btnReset" style="margin-left: 10px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+</div>
+
+<script>
+const LANGS = ['id', 'en'];
+let currentLang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('lang') || 'en';
+let i18n = null;
+let currentCase = 'pubsub';
+let currentStep = 0;
+
+async function loadData() {
+  const res = await fetch(`i18n/event-driven-architecture.${currentLang}.json`);
+  i18n = await res.json();
+}
+
+function updateStaticUI() {
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + `<span>${i18n.h1Highlight}</span>` + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+
+  document.getElementById('tab-pubsub').textContent = i18n.cases.pubsub;
+  document.getElementById('tab-queue').textContent = i18n.cases.queue;
+  document.getElementById('tab-choreography').textContent = i18n.cases.choreography;
+  document.getElementById('tab-resilience').textContent = i18n.cases.resilience;
+
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnReset').innerHTML = i18n.controls.reset;
+
+  const ls = document.getElementById('langSwitch');
+  ls.innerHTML = '';
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (l === currentLang ? ' active' : '');
+    b.innerText = l.toUpperCase();
+    b.onclick = () => setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+/* ---------- shared builders ---------- */
+function box(icon, label, cls) {
+  return `<div class="svc-box ${cls || ''}"><span class="svc-icon">${icon}</span><span class="svc-label">${label}</span></div>`;
+}
+function pill(id, opts) {
+  const el = document.getElementById(id);
+  if (!opts || !opts.show) { el.className = 'event-pill'; return; }
+  el.className = 'event-pill show' + (opts.cls ? ' ' + opts.cls : '');
+  el.style.left = opts.pos + '%';
+  el.textContent = opts.label;
+}
+
+/* ---------- PUB/SUB ---------- */
+function resetPubsub() { document.getElementById('ps-row').innerHTML = ''; }
+function renderPubsub(step) {
+  const pub = box('🛒', 'OrderService', step === 2 ? 'active' : 'neutral');
+  const bus = box('🚌', 'Event Bus', (step === 2 || step === 3) ? 'active' : (step >= 1 ? 'registered' : ''));
+  let subs = '';
+  if (step >= 1) {
+    const subCls = step === 4 ? 'sub-active' : 'registered';
+    subs = box('📧', 'EmailService', subCls) + box('📦', 'InventoryService', subCls) + box('📊', 'AnalyticsService', subCls);
+  }
+  if (step === 5) {
+    subs = box('📧', 'EmailService', 'registered') + box('📦', 'InventoryService', 'registered') + box('📊', 'AnalyticsService', 'registered') + box('🔍', 'FraudDetectionService', 'new');
+  }
+
+  document.getElementById('ps-row').innerHTML =
+    pub +
+    `<div class="ps-wire"><div class="wire-line"></div><div class="event-pill" id="ps-pill1"></div></div>` +
+    bus +
+    `<div class="ps-wire"><div class="wire-line"></div><div class="event-pill" id="ps-pill2"></div></div>` +
+    `<div class="ps-subs">${subs}</div>`;
+
+  pill('ps-pill1', step === 2 ? { show: true, pos: 50, label: 'OrderPlaced', cls: 'event' } : null);
+  pill('ps-pill2', step === 3 ? { show: true, pos: 50, label: 'OrderPlaced', cls: 'event' } : null);
+}
+
+/* ---------- QUEUE ---------- */
+function resetQueue() { document.getElementById('q-row').innerHTML = ''; }
+function renderQueue(step) {
+  const depthByStep = [0, 5, 2, 3, 1, 0];
+  const depth = depthByStep[step];
+  const producerCls = step === 1 ? 'active' : 'neutral';
+  const consumerCls = step === 3 ? 'down' : (step === 2 || step === 4 ? 'active' : 'neutral');
+  let slots = '';
+  for (let i = 0; i < depth; i++) slots += '<div class="q-slot"></div>';
+
+  document.getElementById('q-row').innerHTML =
+    box('💳', 'PaymentService', producerCls) +
+    `<div class="q-queue"><div class="q-queue-label">Queue</div><div class="q-slots">${slots}</div></div>` +
+    box('🔔', 'NotificationService', consumerCls);
+}
+
+/* ---------- CHOREOGRAPHY vs ORCHESTRATION ---------- */
+function cxArrow(label, cls) { return `<div class="cx-arrow ${cls || ''}"><span class="cx-arrow-label">${label || ''}</span></div>`; }
+function cxRow(title, track, extraCls) { return `<div class="cx-row ${extraCls || ''}"><div class="cx-row-label">${title}</div><div class="cx-track">${track}</div></div>`; }
+function resetChoreography() { document.getElementById('cx-wrap').innerHTML = ''; }
+function renderChoreography(step) {
+  const order = box('🛒', 'OrderService', 'neutral');
+  const payment = box('💳', 'PaymentService', 'neutral');
+  const shipping = box('🚚', 'ShippingService', 'neutral');
+  const orchestrator = box('🎛️', 'Orchestrator', 'orchestrator');
+
+  const choreoTrack = order + cxArrow('OrderPlaced →', 'event') + payment + cxArrow('PaymentCompleted →', 'event') + shipping;
+  const orchTrack = orchestrator + cxArrow('calls →', 'call') + order + cxArrow('calls →', 'call') + payment + cxArrow('calls →', 'call') + shipping;
+  const plainTrack = order + cxArrow('') + payment + cxArrow('') + shipping;
+
+  let html = '';
+  if (step === 0) {
+    html = cxRow('OrderService → PaymentService → ShippingService', plainTrack);
+  } else if (step === 1) {
+    html = cxRow('🎭 Choreography', choreoTrack, 'dim') + cxRow('🎛️ Orchestration', orchTrack, 'dim');
+  } else if (step === 2) {
+    html = cxRow('🎭 Choreography', choreoTrack) + cxRow('🎛️ Orchestration', orchTrack, 'dim');
+  } else if (step === 3) {
+    html = cxRow('🎭 Choreography', choreoTrack, 'dim') + cxRow('🎛️ Orchestration', orchTrack);
+  } else {
+    html = cxRow('🎭 Choreography', choreoTrack) + cxRow('🎛️ Orchestration', orchTrack);
+  }
+  document.getElementById('cx-wrap').innerHTML = html;
+}
+
+/* ---------- RESILIENCE (sync vs event-driven) ---------- */
+function resetResilience() { document.getElementById('res-wrap').innerHTML = ''; }
+function renderResilience(step) {
+  const orderOk = box('🛒', 'OrderService', 'active');
+  const orderDanger = box('🛒', 'OrderService', 'danger');
+  const orderDone = box('🛒', 'OrderService', 'sub-active');
+  const paymentOk = box('💳', 'PaymentService', 'active');
+  const paymentDanger = box('💳', 'PaymentService', 'danger');
+  const shippingOk = box('🚚', 'ShippingService', 'neutral');
+  const shippingDown = box('🚚', 'ShippingService', 'down');
+  const queueBox = box('📥', 'Queue', 'neutral');
+
+  const syncNormal = cxRow('🔗 Synchronous (REST)', orderOk + cxArrow('waits →', 'call') + paymentOk + cxArrow('waits →', 'call') + shippingOk);
+  const syncFail = cxRow('🔗 Synchronous (REST)', orderDanger + cxArrow('fails ←', 'fail') + paymentDanger + cxArrow('fails ←', 'fail') + shippingDown);
+  const syncFailDim = cxRow('🔗 Synchronous (REST)', orderDanger + cxArrow('fails ←', 'fail') + paymentDanger + cxArrow('fails ←', 'fail') + shippingDown, 'dim');
+
+  const eventOk = cxRow('⚡ Event-Driven', orderDone + cxArrow('OrderPlaced →', 'event') + queueBox + cxArrow('', 'event') + paymentOk + cxArrow('', 'event') + shippingOk);
+  const eventResilient = cxRow('⚡ Event-Driven', orderDone + cxArrow('OrderPlaced →', 'event') + queueBox + cxArrow('', 'event') + paymentOk + cxArrow('waiting…', 'event') + shippingDown);
+
+  let html = '';
+  if (step === 0) html = syncNormal;
+  else if (step === 1) html = syncNormal;
+  else if (step === 2) html = syncFail;
+  else if (step === 3) html = syncFailDim + eventOk;
+  else if (step === 4) html = syncFailDim + eventResilient;
+  else html = syncFailDim + eventResilient;
+
+  document.getElementById('res-wrap').innerHTML = html;
+}
+
+/* ---------- generic step render ---------- */
+const RENDERERS = { pubsub: renderPubsub, queue: renderQueue, choreography: renderChoreography, resilience: renderResilience };
+const RESETTERS = { pubsub: resetPubsub, queue: resetQueue, choreography: resetChoreography, resilience: resetResilience };
+
+function setCase(c) {
+  currentCase = c;
+  currentStep = 0;
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${c}`).classList.add('active');
+
+  document.querySelectorAll('.case-container').forEach(cc => cc.classList.remove('active'));
+  document.getElementById(`c-${c}`).classList.add('active');
+
+  RESETTERS[c]();
+  renderStep();
+}
+
+function renderStep() {
+  const steps = i18n.steps[currentCase];
+  const data = steps[currentStep];
+
+  RENDERERS[currentCase](currentStep);
+
+  document.getElementById('tag').textContent = data.tag;
+  document.getElementById('storyTitle').textContent = data.title;
+  document.getElementById('storyDesc').textContent = data.desc;
+
+  const grid = document.getElementById('dataGrid');
+  grid.innerHTML = '';
+  data.fields.forEach(([lbl, val]) => {
+    grid.innerHTML += `<div class="data-card"><div class="data-label">${lbl}</div><div class="data-val">${val}</div></div>`;
+  });
+
+  const track = document.getElementById('stepTrack');
+  track.innerHTML = '';
+  for (let i = 0; i < steps.length; i++) {
+    let cls = 'dot';
+    if (i < currentStep) cls += ' done';
+    if (i === currentStep) cls += ' now';
+    track.innerHTML += `<div class="${cls}"></div>`;
+  }
+
+  document.getElementById('btnPrev').disabled = (currentStep === 0);
+  document.getElementById('btnNext').innerHTML = (currentStep === steps.length - 1) ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').onclick = () => { const len = i18n.steps[currentCase].length; if (currentStep < len - 1) { currentStep++; renderStep(); } };
+document.getElementById('btnPrev').onclick = () => { if (currentStep > 0) { currentStep--; renderStep(); } };
+document.getElementById('btnReset').onclick = () => { currentStep = 0; renderStep(); };
+
+async function setLang(l) {
+  if (l === currentLang) return;
+  currentLang = l;
+  localStorage.setItem('lang', l);
+  const u = new URL(window.location);
+  u.searchParams.set('lang', l);
+  history.replaceState(null, '', u);
+
+  await loadData();
+  updateStaticUI();
+  renderStep();
+
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: l }, '*');
+  }
+}
+
+async function init() {
+  await loadData();
+  updateStaticUI();
+  setCase('pubsub');
+
+  document.getElementById('loadingNote').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loadingNote').style.display = 'none';
+    document.getElementById('wrap').style.opacity = '1';
+  }, 500);
+}
+
+init();
+</script>
+</body>
+</html>

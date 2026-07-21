@@ -1,0 +1,195 @@
+{
+  "documentTitle": "HTTPS/TLS: Di Balik Gembok Kecil di Address Bar",
+  "eyebrow": "Keamanan Lapisan Transport",
+  "h1Prefix": "Gembok kecil di address bar, ",
+  "h1Highlight": "prosesnya jauh lebih rumit dari itu",
+  "h1Suffix": ".",
+  "lede": "HTTPS bukan sekadar 'HTTP + gembok'. Di baliknya ada protokol TLS (Transport Layer Security) yang menjalankan serangkaian negosiasi sebelum satu byte data pun dikirim: kedua pihak saling kenalan, server membuktikan identitasnya lewat sertifikat, lalu keduanya sepakat membuat kunci rahasia yang sama tanpa pernah mengirim kunci itu lewat jaringan. Coba empat skenario di bawah ini — dari alur handshake lengkap, bagaimana browser memutuskan mempercayai sebuah sertifikat, kenapa TLS 1.3 lebih cepat dari TLS 1.2, sampai apa yang sebenarnya dilihat penyerang kalau koneksinya tidak dienkripsi.",
+  "cases": {
+    "handshake": "🤝 TLS Handshake",
+    "trust": "📜 Rantai Sertifikat",
+    "versions": "⚡ TLS 1.2 vs 1.3",
+    "mitm": "🕵️ HTTP vs HTTPS"
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓"
+  },
+  "labels": {
+    "totalRoundTripsSlow": "Total 2 round-trip",
+    "totalRoundTripsFast": "Total 1 round-trip",
+    "zeroRtt": "0 round-trip (0-RTT)",
+    "returnVisitLane": "⚡ TLS 1.3 (kunjungan berikutnya)",
+    "injectedScript": "✎ script disisipkan",
+    "encryptedLabel": "🔒 terenkripsi",
+    "unreadableLabel": "🔒 tidak terbaca"
+  },
+  "steps": {
+    "handshake": [
+      {
+        "tag": "MULAI",
+        "title": "Browser hendak membuka https://example.com",
+        "desc": "Sebelum ada satu pun data situs yang bisa ditampilkan, browser (client) dan server harus lebih dulu menyepakati cara mengenkripsi seluruh percakapan mereka. Belum ada saluran aman sama sekali di titik ini — semua yang terjadi selanjutnya disebut TLS handshake.",
+        "fields": [["Client", "Browser pengguna"], ["Server", "example.com"], ["Status", "Belum ada saluran aman"]]
+      },
+      {
+        "tag": "CLIENT HELLO",
+        "title": "Client mengirim ClientHello",
+        "desc": "Pesan pertama selalu dari client. Isinya bukan data rahasia — hanya proposal: versi TLS tertinggi yang didukung, daftar cipher suite (kombinasi algoritma enkripsi) yang bisa dipakai, dan sebuah angka acak (client random) yang nanti ikut dipakai meracik kunci sesi.",
+        "fields": [["Dikirim", "ClientHello"], ["Berisi", "Versi TLS, daftar cipher suite, client random"], ["Terenkripsi?", "Belum — semua ini masih teks terbuka"]]
+      },
+      {
+        "tag": "SERVER HELLO + SERTIFIKAT",
+        "title": "Server membalas dengan ServerHello dan sertifikatnya",
+        "desc": "Server memilih satu cipher suite dari daftar yang ditawarkan client, mengirim angka acaknya sendiri (server random), dan yang terpenting: mengirimkan sertifikat digitalnya — dokumen yang membuktikan 'akulah example.com' sekaligus memuat kunci publik server.",
+        "fields": [["Dikirim", "ServerHello + Sertifikat + server random"], ["Cipher suite dipilih", "oleh server, dari daftar client"], ["Berisi kunci publik", "milik server, di dalam sertifikat"]]
+      },
+      {
+        "tag": "VERIFIKASI SERTIFIKAT",
+        "title": "Client memeriksa keabsahan sertifikat server",
+        "desc": "Sebelum melangkah lebih jauh, browser memverifikasi sertifikat itu asli: nama domainnya cocok, belum kedaluwarsa, dan ditandatangani oleh otoritas yang dipercaya (lihat skenario 'Rantai Sertifikat' untuk detail lengkapnya). Kalau gagal, browser langsung menghentikan koneksi dengan peringatan.",
+        "fields": [["Dicek", "Nama domain, masa berlaku, tanda tangan CA"], ["Jika gagal", "Koneksi dihentikan, muncul peringatan keamanan"]]
+      },
+      {
+        "tag": "PERTUKARAN KUNCI",
+        "title": "Client & server bertukar bahan untuk kunci sesi",
+        "desc": "Memakai kunci publik server (dan skema pertukaran kunci modern seperti ECDHE), client dan server saling mengirim 'bahan baku' kunci. Kuncinya sendiri TIDAK PERNAH dikirim langsung lewat jaringan — hanya bahan yang dipakai masing-masing pihak untuk menghitungnya sendiri-sendiri.",
+        "fields": [["Metode umum", "ECDHE (Ephemeral Diffie-Hellman)"], ["Yang dikirim", "bahan pertukaran kunci, bukan kunci itu sendiri"]]
+      },
+      {
+        "tag": "TURUNKAN KUNCI SESI",
+        "title": "Kedua pihak menghitung kunci sesi yang identik — secara terpisah",
+        "desc": "Dari client random, server random, dan hasil pertukaran kunci tadi, client dan server masing-masing menjalankan fungsi turunan kunci (key derivation function) secara independen. Hasilnya: keduanya mendapat kunci sesi simetris yang PERSIS SAMA, tanpa kunci itu pernah melintasi jaringan sama sekali.",
+        "fields": [["Dihitung oleh", "client dan server, masing-masing sendiri"], ["Hasil", "kunci sesi simetris yang identik di kedua sisi"]]
+      },
+      {
+        "tag": "FINISHED",
+        "title": "Keduanya saling mengirim pesan Finished terenkripsi",
+        "desc": "Sebagai bukti bahwa kunci sesi berhasil disepakati dengan benar, client dan server masing-masing mengirim pesan 'Finished' — pesan pertama yang dienkripsi memakai kunci sesi yang baru saja dihitung. Kalau salah satu pihak tidak bisa mendekripsinya, berarti ada yang tidak beres dan handshake gagal.",
+        "fields": [["Pesan", "Finished (dari kedua sisi)"], ["Dienkripsi dengan", "kunci sesi yang baru dihitung"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Saluran aman terbentuk — data aplikasi mulai mengalir",
+        "desc": "Handshake selesai. Mulai titik ini, setiap request dan response HTTP di antara browser dan server dienkripsi memakai kunci sesi simetris tadi — jauh lebih cepat dibanding enkripsi asimetris, yang tugasnya sudah selesai begitu kunci sesi ini terbentuk.",
+        "fields": [["Status", "Saluran TLS aktif"], ["Enkripsi selanjutnya", "simetris, memakai kunci sesi"]]
+      }
+    ],
+    "trust": [
+      {
+        "tag": "MULAI",
+        "title": "Browser baru saja menerima sertifikat dari example.com",
+        "desc": "Sertifikat itu sendiri hanyalah sebuah klaim — 'ini kunci publik milik example.com'. Klaim ini tidak berguna kalau tidak ada cara membuktikan kebenarannya. Di sinilah rantai kepercayaan (chain of trust) berperan.",
+        "fields": [["Diterima", "Sertifikat untuk example.com"], ["Klaimnya", "\"Ini kunci publik example.com\""]]
+      },
+      {
+        "tag": "CEK IDENTITAS",
+        "title": "Apakah nama di sertifikat cocok dengan situs yang dituju?",
+        "desc": "Langkah paling dasar: browser mencocokkan nama domain di URL address bar dengan nama domain yang tertulis di sertifikat. Kalau kamu membuka example.com tapi sertifikatnya diterbitkan untuk domain lain, browser langsung curiga.",
+        "fields": [["Domain di address bar", "example.com"], ["Domain di sertifikat", "example.com — cocok"]]
+      },
+      {
+        "tag": "CEK TANDA TANGAN",
+        "title": "Sertifikat example.com ditandatangani oleh Intermediate CA",
+        "desc": "Sertifikat server tidak berdiri sendiri — ia ditandatangani secara digital oleh Certificate Authority (CA) perantara (Intermediate CA), memakai mekanisme yang sama persis seperti tanda tangan digital: browser memverifikasi tanda tangan itu memakai kunci publik milik Intermediate CA.",
+        "fields": [["Ditandatangani oleh", "Intermediate CA"], ["Diverifikasi dengan", "kunci publik Intermediate CA"]]
+      },
+      {
+        "tag": "NAIK SATU TINGKAT",
+        "title": "Tapi siapa yang mempercayai Intermediate CA?",
+        "desc": "Sertifikat milik Intermediate CA itu sendiri juga ditandatangani oleh pihak lain yang lebih tinggi: Root CA. Browser mengulang proses yang sama — memverifikasi tanda tangan pada sertifikat Intermediate CA memakai kunci publik Root CA. Rantai ini bisa berlanjut lebih dari satu tingkat pada praktiknya.",
+        "fields": [["Sertifikat Intermediate CA", "ditandatangani oleh Root CA"], ["Diverifikasi dengan", "kunci publik Root CA"]]
+      },
+      {
+        "tag": "JANGKAR KEPERCAYAAN",
+        "title": "Root CA dipercaya begitu saja — tanpa perlu dibuktikan lagi",
+        "desc": "Sertifikat Root CA memang menandatangani dirinya sendiri (self-signed) — tapi itu bukan masalah, karena Root CA tidak perlu 'dibuktikan' lewat rantai. Kunci publik Root CA sudah ikut terpasang di dalam sistem operasi atau browser sejak awal, sebagai daftar pihak yang dipercaya begitu saja (trust store).",
+        "fields": [["Sertifikat Root CA", "self-signed"], ["Kenapa dipercaya", "sudah terpasang di trust store OS/browser"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Rantai lengkap terverifikasi — gembok muncul di address bar",
+        "desc": "Server Certificate → Intermediate CA → Root CA — setiap tanda tangan di rantai ini valid, sampai ke titik yang dipercaya browser tanpa perlu bukti lebih lanjut. Kalau satu saja mata rantai ini putus (kedaluwarsa, salah domain, penerbit tak dikenal), browser akan menolak koneksi dan menampilkan peringatan, bukan gembok.",
+        "fields": [["Rantai", "Server Cert → Intermediate CA → Root CA"], ["Hasil", "Terpercaya — gembok ditampilkan"]]
+      }
+    ],
+    "versions": [
+      {
+        "tag": "MULAI",
+        "title": "Titik berangkat yang sama: client ingin mulai handshake",
+        "desc": "Kedua versi protokol ini punya tujuan akhir yang sama — saluran terenkripsi yang aman. Bedanya ada di berapa kali data harus bolak-balik (round-trip) melewati jaringan sebelum data aplikasi yang sesungguhnya boleh mulai dikirim. Setiap round-trip menambah waktu tunggu (latency), apalagi untuk koneksi dengan jarak jauh.",
+        "fields": [["Tujuan akhir", "sama — saluran terenkripsi"], ["Yang beda", "jumlah round-trip sebelum data aplikasi bisa dikirim"]]
+      },
+      {
+        "tag": "TLS 1.2 — ROUND-TRIP 1",
+        "title": "TLS 1.2: ClientHello, lalu menunggu balasan lengkap dari server",
+        "desc": "Di TLS 1.2, client mengirim ClientHello lalu harus menunggu. Server membalas dengan serangkaian pesan sekaligus (ServerHello, sertifikat, parameter pertukaran kunci) sebelum client bisa membalas apa pun. Ini baru round-trip pertama.",
+        "fields": [["Dikirim client", "ClientHello"], ["Dibalas server", "ServerHello + Sertifikat + parameter kunci"], ["Round-trip ke", "1"]]
+      },
+      {
+        "tag": "TLS 1.2 — ROUND-TRIP 2",
+        "title": "TLS 1.2: baru setelah round-trip kedua, data aplikasi boleh lewat",
+        "desc": "Client mengirim bahan kunci miliknya lalu pesan Finished, dan HARUS menunggu balasan Finished dari server sebelum benar-benar yakin saluran ini aman dipakai. Total: dua kali bolak-balik jaringan penuh sebelum byte pertama data situs (HTML, gambar, dst) bisa dikirim.",
+        "fields": [["Round-trip total", "2"], ["Data aplikasi boleh dikirim", "setelah round-trip ke-2 selesai"]]
+      },
+      {
+        "tag": "TLS 1.3 — LEBIH BERANI MENEBAK",
+        "title": "TLS 1.3: client langsung menebak dan mengirim bahan kuncinya di awal",
+        "desc": "TLS 1.3 memangkas basa-basi: pada ClientHello yang sama, client langsung menyertakan tebakan bahan pertukaran kunci (key share) untuk grup kriptografi yang paling umum dipakai — tanpa menunggu server bilang metode apa yang dipilih lebih dulu.",
+        "fields": [["Dikirim client", "ClientHello + tebakan key share sekaligus"], ["Asumsi", "server kemungkinan besar mendukung grup yang sama"]]
+      },
+      {
+        "tag": "TLS 1.3 — SELESAI DALAM 1 ROUND-TRIP",
+        "title": "Server langsung membalas semuanya sekaligus — termasuk siap kirim data",
+        "desc": "Karena tebakan client biasanya benar, server bisa langsung membalas ServerHello, sertifikat, bahan kuncinya sendiri, DAN pesan Finished dalam satu balasan. Client hanya perlu membalas Finished-nya sendiri — total cukup SATU round-trip sebelum data aplikasi mengalir.",
+        "fields": [["Round-trip total", "1"], ["Lebih cepat dari TLS 1.2", "sekitar setengah waktu handshake"]]
+      },
+      {
+        "tag": "BONUS: 0-RTT",
+        "title": "Untuk kunjungan berikutnya, TLS 1.3 bahkan bisa 0 round-trip",
+        "desc": "Kalau client pernah terhubung ke server yang sama sebelumnya, TLS 1.3 mengizinkan client langsung mengirim data aplikasi terenkripsi bersamaan dengan ClientHello pertamanya — disebut 0-RTT. Trade-off-nya: data 0-RTT sedikit lebih rentan terhadap serangan replay, jadi biasanya cuma dipakai untuk request yang aman diulang (idempotent), bukan misalnya transaksi pembayaran.",
+        "fields": [["Disebut", "0-RTT (session resumption)"], ["Syarat", "pernah terhubung sebelumnya ke server yang sama"], ["Trade-off", "risiko serangan replay pada data 0-RTT"]]
+      }
+    ],
+    "mitm": [
+      {
+        "tag": "MULAI",
+        "title": "Client login ke sebuah situs lewat HTTP biasa (belum TLS sama sekali)",
+        "desc": "Bayangkan formulir login dikirim lewat http://, bukan https:// — tidak ada enkripsi apa pun yang membungkus data ini di sepanjang perjalanannya lewat jaringan, misalnya WiFi publik di kafe.",
+        "fields": [["Protokol", "HTTP (tanpa TLS)"], ["Data yang dikirim", "formulir login (username & password)"]]
+      },
+      {
+        "tag": "PENYERANG DI TENGAH JALAN",
+        "title": "Seseorang menyisipkan diri di antara client dan server",
+        "desc": "Di jaringan yang sama (misalnya WiFi publik yang tidak aman), seorang penyerang memposisikan dirinya di antara client dan server — inilah yang disebut man-in-the-middle (MITM). Semua trafik client secara fisik/logis lewat dulu melalui penyerang sebelum sampai ke server.",
+        "fields": [["Posisi penyerang", "di antara client dan server"], ["Skenario umum", "WiFi publik tanpa proteksi tambahan"]]
+      },
+      {
+        "tag": "DIBACA MENTAH-MENTAH",
+        "title": "Lewat HTTP: penyerang membaca username & password apa adanya",
+        "desc": "Karena tidak ada enkripsi sama sekali, penyerang cukup 'menyadap' paket yang lewat dan membaca isinya langsung sebagai teks biasa — termasuk username dan password yang baru saja diketik pengguna ke formulir login.",
+        "fields": [["Dilihat penyerang", "username & password, apa adanya"], ["Butuh mendekripsi?", "Tidak — datanya memang tidak terenkripsi"]]
+      },
+      {
+        "tag": "BAHKAN BISA DIUBAH",
+        "title": "Penyerang juga bisa menyisipkan atau mengubah isi halaman",
+        "desc": "Karena tidak ada mekanisme untuk mendeteksi perubahan, penyerang tidak cuma bisa membaca — ia bisa mengubah trafik yang lewat, misalnya menyisipkan script berbahaya ke halaman HTML sebelum diteruskan ke browser korban, tanpa korban sadar sama sekali.",
+        "fields": [["Kemampuan tambahan", "mengubah/menyisipkan konten di tengah jalan"], ["Terdeteksi oleh client?", "Tidak ada mekanisme deteksi di HTTP polos"]]
+      },
+      {
+        "tag": "SEKARANG DENGAN HTTPS",
+        "title": "Penyerang yang sama, posisi yang sama — tapi kini traffic dibungkus TLS",
+        "desc": "Ulangi skenario yang sama persis, tapi kali ini client terhubung lewat https://. Penyerang masih bisa duduk di posisi yang sama di tengah jaringan — TLS tidak mengusirnya — tapi semua yang lewat sekarang berbentuk ciphertext acak yang tidak bisa ia baca tanpa kunci sesi.",
+        "fields": [["Posisi penyerang", "masih sama — di tengah jalan"], ["Yang terlihat sekarang", "data terenkripsi acak, bukan teks bermakna"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "HTTPS tidak mengusir penyerang — HTTPS membuat kehadirannya sia-sia",
+        "desc": "Inilah inti dari TLS: ia tidak mencegah seseorang menempatkan diri di jalur jaringanmu. Yang dicegahnya adalah dua hal — penyerang tidak bisa MEMBACA isi data (kerahasiaan) dan tidak bisa MENGUBAHNYA tanpa ketahuan (integritas), berkat pesan Finished dan pemeriksaan integritas di setiap paket.",
+        "fields": [["Kerahasiaan", "penyerang tidak bisa membaca isi data"], ["Integritas", "perubahan data akan terdeteksi & koneksi ditolak"]]
+      }
+    ]
+  }
+}

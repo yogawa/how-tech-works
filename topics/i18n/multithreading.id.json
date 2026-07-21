@@ -1,0 +1,78 @@
+{
+  "documentTitle": "Multithreading: Menjalankan Tugas Bersamaan",
+  "eyebrow": "Sistem & OS",
+  "h1Prefix": "Sebuah program bisa memiliki ",
+  "h1Highlight": "banyak alur pemikiran",
+  "h1Suffix": ".",
+  "lede": "Daripada mengeksekusi tugas satu per satu, program dapat membaginya menjadi beberapa 'thread' yang berjalan bersamaan. Ini mempercepat proses tetapi menimbulkan masalah baru ketika thread berbagi data yang sama. Mari kita lihat cara kerjanya dan cara mengatasi kekacauan tersebut dengan Lock/Mutex.",
+  "figCaption": "GAMBAR 01 — MULTITHREADING",
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Selanjutnya &rarr;",
+    "reset": "Ulangi Dari Awal",
+    "done": "Selesai ✓",
+    "stepCounter": "Langkah {n} / {total}"
+  },
+  "legend": {
+    "title": "Referensi cepat: Konsep",
+    "sub": "Istilah umum dalam multithreading.",
+    "headers": ["Istilah", "Deskripsi"],
+    "rows": [
+      {
+        "layer": "Thread",
+        "dataName": "Urutan instruksi eksekusi independen di dalam suatu program.",
+        "added": "-",
+        "removed": "-"
+      },
+      {
+        "layer": "Konkurensi",
+        "dataName": "Menangani beberapa hal sekaligus secara bersamaan.",
+        "added": "-",
+        "removed": "-"
+      },
+      {
+        "layer": "Race Condition",
+        "dataName": "Ketika beberapa thread mencoba mengubah data yang sama di saat bersamaan, menyebabkan hasil yang tidak terduga.",
+        "added": "-",
+        "removed": "-"
+      },
+      {
+        "layer": "Mutex / Lock",
+        "dataName": "Mekanisme untuk memastikan hanya satu thread yang dapat mengakses sumber daya pada satu waktu.",
+        "added": "-",
+        "removed": "-"
+      }
+    ]
+  },
+  "footer": "DIAGRAM INTERAKTIF — KONSEP MULTITHREADING",
+  "steps": [
+    {
+      "tag": "MULAI",
+      "title": "Eksekusi Single-Thread",
+      "desc": "Dalam program single-thread, tugas dieksekusi secara berurutan. Tugas B harus menunggu Tugas A selesai. Jika Tugas A lambat, seluruh program akan macet.",
+      "fields": [["Eksekusi", "Berurutan"], ["Jumlah Thread", "1"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "MULTI",
+      "title": "Memperkenalkan Banyak Thread",
+      "desc": "Dengan membuat beberapa thread, tugas dapat didistribusikan. Thread 1 mengerjakan Tugas A, Thread 2 mengerjakan Tugas B. Mereka sekarang dapat mengeksekusi tugas secara bersamaan.",
+      "fields": [["Eksekusi", "Konkuren (Bersamaan)"], ["Jumlah Thread", "3"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "BERBAGI",
+      "title": "Masalah Berbagi Sumber Daya",
+      "desc": "Semua thread dalam sebuah proses berbagi memori yang sama. Jika Thread 1 dan Thread 2 mencoba memperbarui variabel penghitung pada saat yang sama, 'Race Condition' terjadi dan data menjadi rusak.",
+      "fields": [["Masalah", "Race Condition"], ["Hasil", "Data Rusak / Korup"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "TERKUNCI",
+      "title": "Mengatasinya dengan Mutex (Lock)",
+      "desc": "Untuk mencegah race condition, kita menggunakan Mutex (Mutual Exclusion). Sebelum memperbarui penghitung, thread harus mendapatkan kunci (lock). Jika thread lain sudah memegangnya, ia harus menunggu.",
+      "fields": [["Solusi", "Mutex / Lock"], ["Hasil", "Data Aman"]],
+      "sizeUnit": null
+    }
+  ]
+}

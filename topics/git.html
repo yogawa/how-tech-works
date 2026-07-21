@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Git</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #FAF7F2;
+  --bg-card: #FFFFFF;
+  --ink: #1F2430;
+  --text-muted: #6B7280;
+  --border: #E5E0D8;
+
+  --git-orange: #F05033;
+  --main-blue: #2563EB;
+  --feature-purple: #7C3AED;
+  --success-green: #16A34A;
+  --conflict-red: #DC2626;
+  --warn-amber: #D97706;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 12% 0%, rgba(240, 80, 51, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(37, 99, 235, 0.06) 0%, transparent 45%);
+  color: var(--ink);
+  font-family: 'Sora', sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrap { max-width: 1200px; width: 100%; }
+
+/* Header */
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.header-text { max-width: 660px; }
+.eyebrow {
+  font-family: 'Fira Code', monospace; font-size: 12px; color: var(--git-orange);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: inline-block;
+  padding: 4px 10px; background: rgba(240, 80, 51, 0.1); border-radius: 4px; font-weight: 600;
+}
+h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; margin: 10px 0; line-height: 1.12; letter-spacing: -0.01em; }
+h1 span { color: var(--git-orange); }
+.lede { font-size: 16.5px; color: var(--text-muted); line-height: 1.65; font-weight: 400; }
+
+.lang-switch { display: flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.lang-btn { font-family: 'Fira Code', monospace; font-size: 12px; background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; cursor: pointer; transition: all .2s; }
+.lang-btn:hover { color: var(--ink); background: rgba(0,0,0,0.03); }
+.lang-btn.active { background: var(--git-orange); color: #fff; font-weight: 700; }
+
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  background: var(--bg-card); border: 1.5px solid var(--border); color: var(--text-muted);
+  padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13.5px;
+  font-family: 'Sora', sans-serif; transition: all .2s;
+}
+.tab:hover { border-color: var(--git-orange); color: var(--ink); }
+.tab.active { background: rgba(240,80,51,0.08); border-color: var(--git-orange); color: var(--git-orange); }
+
+/* Arena */
+.arena {
+  width: 100%; background: rgba(255,255,255,0.55); border: 1px solid var(--border);
+  border-radius: 20px; padding: 40px 36px; position: relative;
+  margin-bottom: 32px; min-height: 320px; display: flex; flex-direction: column;
+  box-shadow: 0 10px 40px rgba(31,36,48,0.05);
+}
+.case-container { display: none; flex: 1; flex-direction: column; justify-content: center; width: 100%; }
+.case-container.active { display: flex; }
+
+/* Working-directory diagram (workflow case) */
+.wf-areas { display: flex; align-items: stretch; gap: 14px; width: 100%; margin-bottom: 30px; }
+.wf-area { flex: 1; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: 14px; padding: 18px; min-height: 130px; display: flex; flex-direction: column; align-items: center; gap: 14px; transition: all .3s; }
+.wf-area.active { border-color: var(--git-orange); box-shadow: 0 0 0 3px rgba(240,80,51,0.12); }
+.wf-area-label { font-family: 'Fira Code', monospace; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); text-align: center; }
+.wf-slot { flex: 1; min-height: 52px; display: flex; align-items: center; justify-content: center; }
+.wf-arrow { font-size: 20px; color: var(--text-muted); flex-shrink: 0; align-self: center; }
+@media (max-width: 760px) { .wf-areas { flex-direction: column; } .wf-arrow { transform: rotate(90deg); } }
+
+.file-card { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 10px; padding: 10px 16px; font-family: 'Fira Code', monospace; font-size: 12.5px; font-weight: 600; color: var(--ink); box-shadow: 0 2px 8px rgba(31,36,48,0.06); transition: all .4s cubic-bezier(.34,1.56,.64,1); }
+.file-card.status-untracked { border-color: var(--text-muted); border-style: dashed; color: var(--text-muted); box-shadow: none; }
+.file-card.status-modified { border-color: var(--warn-amber); box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+.file-card.status-staged { border-color: var(--main-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.file-card.status-committed { border-color: var(--success-green); box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+
+/* Commit graph (branching / conflict / undo / rebase) */
+.commit-graph { display: flex; flex-direction: column; gap: 36px; width: 100%; padding: 46px 6px 10px; }
+.lane { display: flex; align-items: center; gap: 0; min-height: 46px; }
+.lane-label { width: 130px; flex-shrink: 0; font-family: 'Fira Code', monospace; font-weight: 700; font-size: 12.5px; color: var(--text-muted); }
+.lane-track { display: flex; align-items: center; flex-wrap: wrap; row-gap: 24px; }
+
+.commit-node { position: relative; width: 46px; height: 46px; border-radius: 50%; background: var(--bg-card); border: 2.5px solid var(--main-blue); display: flex; align-items: center; justify-content: center; font-family: 'Fira Code', monospace; font-size: 11.5px; font-weight: 700; color: var(--ink); flex-shrink: 0; transition: all .35s; }
+.commit-node.feature { border-color: var(--feature-purple); }
+.commit-node.warn { border-color: var(--warn-amber); box-shadow: 0 0 0 4px rgba(217,119,6,0.14); }
+.commit-node.merge { border-color: var(--success-green); background: linear-gradient(135deg, rgba(37,99,235,0.1), rgba(124,58,237,0.1)); }
+.commit-node.revert { border-color: var(--success-green); box-shadow: 0 0 0 4px rgba(22,163,74,0.14); }
+.commit-node.dropped { opacity: .4; border-style: dashed; border-color: var(--conflict-red); }
+.commit-node.small { width: 32px; height: 32px; font-size: 9.5px; }
+
+.commit-pair { display: flex; flex-direction: column; gap: 6px; margin: 0 2px; }
+
+.commit-line { width: 30px; height: 3px; background: var(--border); flex-shrink: 0; }
+.commit-line.blue { background: var(--main-blue); }
+.commit-line.purple { background: var(--feature-purple); }
+.commit-line.green { background: var(--success-green); }
+.commit-line.dashed { background: transparent; border-top: 2.5px dashed var(--conflict-red); height: 0; width: 30px; }
+
+.ptr-badge { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Fira Code', monospace; font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+.ptr-badge.head { top: -44px; background: var(--ink); color: #fff; }
+.ptr-badge.branch-main { top: -22px; background: rgba(37,99,235,0.12); color: var(--main-blue); border: 1px solid var(--main-blue); }
+.ptr-badge.branch-feature { top: -22px; background: rgba(124,58,237,0.12); color: var(--feature-purple); border: 1px solid var(--feature-purple); }
+
+/* Conflict code card */
+.code-card { background: var(--ink); border-radius: 12px; padding: 18px 22px; font-family: 'Fira Code', monospace; font-size: 12.5px; line-height: 1.85; color: #E5E0D8; margin-top: 8px; overflow-x: auto; }
+.code-line { white-space: pre; }
+.code-line.marker { color: #ff8a80; font-weight: 700; }
+.code-line.marker-sep { color: #9aa3b2; font-weight: 700; }
+
+/* Player Controls */
+.controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: auto; padding-top: 34px; flex-wrap: wrap; }
+button.control-btn { background: var(--bg-card); border: 1.5px solid var(--border); color: var(--ink); font-family: 'Sora', sans-serif; font-weight: 600; font-size: 13.5px; padding: 11px 22px; border-radius: 30px; cursor: pointer; transition: all .2s; }
+button.control-btn:hover:not(:disabled) { border-color: var(--git-orange); color: var(--git-orange); }
+button.control-btn:disabled { opacity: .35; cursor: not-allowed; }
+button.control-btn.primary { background: var(--git-orange); border-color: var(--git-orange); color: #fff; box-shadow: 0 5px 15px rgba(240,80,51,0.3); }
+button.control-btn.primary:hover:not(:disabled) { background: #d8431f; color: #fff; }
+
+.timeline { display: flex; gap: 8px; margin: 0 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border); transition: all .3s; }
+.dot.done { background: var(--main-blue); }
+.dot.now { background: var(--git-orange); box-shadow: 0 0 0 4px rgba(240,80,51,0.18); transform: scale(1.2); }
+
+/* Story panel */
+.story-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 28px 30px; }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-family: 'Fira Code', monospace; font-size: 11px; font-weight: 700; letter-spacing: .03em; margin-bottom: 14px; background: rgba(240,80,51,0.1); color: var(--git-orange); }
+.story-title { font-size: 22px; font-weight: 700; margin: 0 0 10px; color: var(--ink); }
+.story-desc { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin: 0 0 22px; }
+
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.data-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 15px; }
+.data-label { font-family: 'Fira Code', monospace; font-size: 10.5px; color: var(--text-muted); margin-bottom: 5px; letter-spacing: .02em; }
+.data-val { font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+
+.loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; font-family: 'Fira Code', monospace; color: var(--git-orange); z-index: 100; transition: opacity .5s; }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">LOADING GIT LAB...</div>
+
+<div class="wrap" id="wrap" style="opacity:0; transition: opacity 1s;">
+  <header>
+    <div class="header-text">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="setCase('workflow')" id="tab-workflow"></div>
+    <div class="tab" onclick="setCase('branching')" id="tab-branching"></div>
+    <div class="tab" onclick="setCase('conflict')" id="tab-conflict"></div>
+    <div class="tab" onclick="setCase('undo')" id="tab-undo"></div>
+    <div class="tab" onclick="setCase('rebase')" id="tab-rebase"></div>
+  </div>
+
+  <div class="arena">
+    <!-- WORKFLOW -->
+    <div class="case-container" id="c-workflow">
+      <div class="wf-areas">
+        <div class="wf-area" data-area="wd">
+          <div class="wf-area-label" id="wfLabelWd"></div>
+          <div class="wf-slot" id="wf-slot-wd"></div>
+        </div>
+        <div class="wf-arrow">&rarr;</div>
+        <div class="wf-area" data-area="staging">
+          <div class="wf-area-label" id="wfLabelStaging"></div>
+          <div class="wf-slot" id="wf-slot-staging"></div>
+        </div>
+        <div class="wf-arrow">&rarr;</div>
+        <div class="wf-area" data-area="repo">
+          <div class="wf-area-label" id="wfLabelRepo"></div>
+          <div class="wf-slot" id="wf-slot-repo"></div>
+        </div>
+      </div>
+      <div class="commit-graph" style="padding-top:6px;" id="wf-strip"></div>
+    </div>
+
+    <!-- BRANCHING -->
+    <div class="case-container" id="c-branching">
+      <div class="commit-graph" id="branch-graph"></div>
+    </div>
+
+    <!-- CONFLICT -->
+    <div class="case-container" id="c-conflict">
+      <div class="commit-graph" id="conflict-graph"></div>
+      <div class="code-card" id="conflict-code"></div>
+    </div>
+
+    <!-- UNDO -->
+    <div class="case-container" id="c-undo">
+      <div class="commit-graph" id="undo-graph"></div>
+    </div>
+
+    <!-- REBASE -->
+    <div class="case-container" id="c-rebase">
+      <div class="commit-graph" id="rebase-graph"></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="control-btn primary" id="btnNext"></button>
+      <button class="control-btn" id="btnReset" style="margin-left: 10px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+</div>
+
+<script>
+const LANGS = ['id', 'en'];
+let currentLang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('lang') || 'en';
+let i18n = null;
+let currentCase = 'workflow';
+let currentStep = 0;
+
+async function loadData() {
+  const res = await fetch(`i18n/git.${currentLang}.json`);
+  i18n = await res.json();
+}
+
+function updateStaticUI() {
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + `<span>${i18n.h1Highlight}</span>` + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+
+  document.getElementById('tab-workflow').textContent = i18n.cases.workflow;
+  document.getElementById('tab-branching').textContent = i18n.cases.branching;
+  document.getElementById('tab-conflict').textContent = i18n.cases.conflict;
+  document.getElementById('tab-undo').textContent = i18n.cases.undo;
+  document.getElementById('tab-rebase').textContent = i18n.cases.rebase;
+
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnReset').innerHTML = i18n.controls.reset;
+
+  document.getElementById('wfLabelWd').textContent = 'Working Directory';
+  document.getElementById('wfLabelStaging').textContent = 'Staging Area';
+  document.getElementById('wfLabelRepo').textContent = 'Repository';
+
+  const ls = document.getElementById('langSwitch');
+  ls.innerHTML = '';
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (l === currentLang ? ' active' : '');
+    b.innerText = l.toUpperCase();
+    b.onclick = () => setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+/* ---------- small HTML builders for the commit graph ---------- */
+function N(label, cls, badges) {
+  cls = cls || '';
+  const b = (badges || []).map(bd => `<div class="ptr-badge ${bd[0]}">${bd[1]}</div>`).join('');
+  return `<div class="commit-node ${cls}">${label}${b}</div>`;
+}
+function L(cls) { return `<div class="commit-line ${cls || ''}"></div>`; }
+function lane(label, nodesHtml) {
+  return `<div class="lane"><div class="lane-label">${label}</div><div class="lane-track">${nodesHtml}</div></div>`;
+}
+function pair(a, b) { return `<div class="commit-pair">${a}${b}</div>`; }
+
+/* ---------- WORKFLOW ---------- */
+function wfPlaceFile(area, cls, icon) {
+  document.querySelectorAll('.wf-area').forEach(a => a.classList.remove('active'));
+  document.querySelector(`.wf-area[data-area="${area}"]`).classList.add('active');
+  ['wd', 'staging', 'repo'].forEach(a => { document.getElementById('wf-slot-' + a).innerHTML = ''; });
+  document.getElementById('wf-slot-' + area).innerHTML =
+    `<div class="file-card ${cls}"><span>${icon}</span>hello.txt</div>`;
+}
+function wfStrip(n) {
+  let html = '';
+  for (let i = 1; i <= n; i++) {
+    if (i > 1) html += L('blue');
+    html += N('C' + i);
+  }
+  document.getElementById('wf-strip').innerHTML = n > 0 ? lane('Repository', html) : '';
+}
+function resetWorkflow() {
+  document.querySelectorAll('.wf-area').forEach(a => a.classList.remove('active'));
+  ['wd', 'staging', 'repo'].forEach(a => { document.getElementById('wf-slot-' + a).innerHTML = ''; });
+  document.getElementById('wf-strip').innerHTML = '';
+}
+function renderWorkflow(step) {
+  if (step === 0) { wfPlaceFile('wd', 'status-untracked', '📄'); wfStrip(0); }
+  if (step === 1) { wfPlaceFile('staging', 'status-staged', '📦'); wfStrip(0); }
+  if (step === 2) { wfPlaceFile('repo', 'status-committed', '✅'); wfStrip(1); }
+  if (step === 3) { wfPlaceFile('wd', 'status-modified', '📝'); wfStrip(1); }
+  if (step === 4) { wfPlaceFile('repo', 'status-committed', '✅'); wfStrip(2); }
+}
+
+/* ---------- BRANCHING ---------- */
+function resetBranching() { document.getElementById('branch-graph').innerHTML = ''; }
+function renderBranching(step) {
+  const g = document.getElementById('branch-graph');
+  if (step === 0) {
+    g.innerHTML = lane('main', N('C1') + L('blue') + N('C2', '', [['head', 'HEAD'], ['branch-main', 'main']]));
+  }
+  if (step === 1) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2', '', [['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature', [['head', 'HEAD'], ['branch-feature', 'feature']]));
+  }
+  if (step === 2) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2', '', [['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature') + L('purple') + N('C3', 'feature', [['head', 'HEAD'], ['branch-feature', 'feature']]));
+  }
+  if (step === 3) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2', '', [['head', 'HEAD'], ['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature') + L('purple') + N('C3', 'feature', [['branch-feature', 'feature']]));
+  }
+  if (step === 4) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3', '', [['head', 'HEAD'], ['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature') + L('purple') + N('C3', 'feature', [['branch-feature', 'feature']]));
+  }
+  if (step === 5) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3', '', [['head', 'HEAD'], ['branch-main', 'main'], ['branch-feature', 'feature']]));
+  }
+}
+
+/* ---------- CONFLICT ---------- */
+function resetConflict() {
+  document.getElementById('conflict-graph').innerHTML = '';
+  document.getElementById('conflict-code').innerHTML = '';
+}
+function renderConflictCode(lines) {
+  const el = document.getElementById('conflict-code');
+  el.innerHTML = lines.map(l => {
+    let cls = 'code-line';
+    if (l.startsWith('<<<<<<<') || l.startsWith('>>>>>>>')) cls += ' marker';
+    else if (l === '=======') cls += ' marker-sep';
+    return `<div class="${cls}">${l || ' '}</div>`;
+  }).join('');
+}
+function renderConflict(step) {
+  const g = document.getElementById('conflict-graph');
+  if (step === 0) {
+    g.innerHTML = lane('main & feature', N('C1') + L('blue') + N('C2', '', [['head', 'HEAD']]));
+  }
+  if (step === 1) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2', '', [['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature') + L('purple') + N('C3f', 'feature', [['head', 'HEAD'], ['branch-feature', 'feature']]));
+  }
+  if (step === 2 || step === 3 || step === 4) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3m', '', [['head', 'HEAD'], ['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature') + L('purple') + N('C3f', 'feature', [['branch-feature', 'feature']]));
+  }
+  if (step === 5) {
+    g.innerHTML = lane('main', N('C1') + L('blue') + N('C2') + L('blue') +
+      pair(N('C3m', 'small'), N('C3f', 'feature small')) + L('green') +
+      N('C4', 'merge', [['head', 'HEAD'], ['branch-main', 'main'], ['branch-feature', 'feature']]));
+  }
+  renderConflictCode(i18n.steps.conflict[step].code || []);
+}
+
+/* ---------- UNDO ---------- */
+function resetUndo() { document.getElementById('undo-graph').innerHTML = ''; }
+function renderUndo(step) {
+  const g = document.getElementById('undo-graph');
+  if (step === 0 || step === 1) {
+    g.innerHTML = lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3', 'warn', [['head', 'HEAD'], ['branch-main', 'main']]));
+  }
+  if (step === 2 || step === 3) {
+    g.innerHTML = lane('main', N('C1') + L('blue') + N('C2', '', [['head', 'HEAD'], ['branch-main', 'main']]) + L('dashed') + N('C3', 'dropped'));
+  }
+  if (step === 4) {
+    g.innerHTML = lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3', 'warn', [['branch-main', 'main']]));
+  }
+  if (step === 5 || step === 6) {
+    g.innerHTML = lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3', 'warn') + L('green') + N('C4', 'revert', [['head', 'HEAD'], ['branch-main', 'main']]));
+  }
+}
+
+/* ---------- REBASE ---------- */
+function resetRebase() { document.getElementById('rebase-graph').innerHTML = ''; }
+function renderRebase(step) {
+  const g = document.getElementById('rebase-graph');
+  if (step === 0 || step === 1) {
+    g.innerHTML =
+      lane('main', N('C1') + L('blue') + N('C2') + L('blue') + N('C3m', '', [['branch-main', 'main']])) +
+      lane('feature', N('C2', 'feature') + L('purple') + N('C3f', 'feature', [['branch-feature', 'feature']]));
+  }
+  if (step === 2) {
+    g.innerHTML = lane('git merge', N('C1') + L('blue') + N('C2') + L('blue') +
+      pair(N('C3m', 'small'), N('C3f', 'feature small')) + L('green') +
+      N('C4', 'merge', [['branch-main', 'main'], ['branch-feature', 'feature']]));
+  }
+  if (step === 3) {
+    g.innerHTML = lane('git rebase', N('C1') + L('blue') + N('C2') + L('blue') + N('C3m') + L('purple') +
+      N("C3f'", 'feature', [['branch-main', 'main'], ['branch-feature', 'feature']]));
+  }
+  if (step === 4 || step === 5) {
+    g.innerHTML =
+      lane('hasil merge', N('C1') + L('blue') + N('C2') + L('blue') + pair(N('C3m', 'small'), N('C3f', 'feature small')) + L('green') + N('C4', 'merge')) +
+      lane('hasil rebase', N('C1') + L('blue') + N('C2') + L('blue') + N('C3m') + L('purple') + N("C3f'", 'feature'));
+  }
+}
+
+/* ---------- generic step render ---------- */
+const RENDERERS = { workflow: renderWorkflow, branching: renderBranching, conflict: renderConflict, undo: renderUndo, rebase: renderRebase };
+const RESETTERS = { workflow: resetWorkflow, branching: resetBranching, conflict: resetConflict, undo: resetUndo, rebase: resetRebase };
+
+function setCase(c) {
+  currentCase = c;
+  currentStep = 0;
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${c}`).classList.add('active');
+
+  document.querySelectorAll('.case-container').forEach(cc => cc.classList.remove('active'));
+  document.getElementById(`c-${c}`).classList.add('active');
+
+  RESETTERS[c]();
+  renderStep();
+}
+
+function renderStep() {
+  const steps = i18n.steps[currentCase];
+  const data = steps[currentStep];
+
+  RENDERERS[currentCase](currentStep);
+
+  document.getElementById('tag').textContent = data.tag;
+  document.getElementById('storyTitle').textContent = data.title;
+  document.getElementById('storyDesc').textContent = data.desc;
+
+  const grid = document.getElementById('dataGrid');
+  grid.innerHTML = '';
+  data.fields.forEach(([lbl, val]) => {
+    grid.innerHTML += `<div class="data-card"><div class="data-label">${lbl}</div><div class="data-val">${val}</div></div>`;
+  });
+
+  const track = document.getElementById('stepTrack');
+  track.innerHTML = '';
+  for (let i = 0; i < steps.length; i++) {
+    let cls = 'dot';
+    if (i < currentStep) cls += ' done';
+    if (i === currentStep) cls += ' now';
+    track.innerHTML += `<div class="${cls}"></div>`;
+  }
+
+  document.getElementById('btnPrev').disabled = (currentStep === 0);
+  document.getElementById('btnNext').innerHTML = (currentStep === steps.length - 1) ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').onclick = () => { const len = i18n.steps[currentCase].length; if (currentStep < len - 1) { currentStep++; renderStep(); } };
+document.getElementById('btnPrev').onclick = () => { if (currentStep > 0) { currentStep--; renderStep(); } };
+document.getElementById('btnReset').onclick = () => { currentStep = 0; renderStep(); };
+
+async function setLang(l) {
+  if (l === currentLang) return;
+  currentLang = l;
+  localStorage.setItem('lang', l);
+  const u = new URL(window.location);
+  u.searchParams.set('lang', l);
+  history.replaceState(null, '', u);
+
+  await loadData();
+  updateStaticUI();
+  renderStep();
+
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: l }, '*');
+  }
+}
+
+async function init() {
+  await loadData();
+  updateStaticUI();
+  setCase('workflow');
+
+  document.getElementById('loadingNote').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loadingNote').style.display = 'none';
+    document.getElementById('wrap').style.opacity = '1';
+  }, 500);
+}
+
+init();
+</script>
+</body>
+</html>

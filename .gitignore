@@ -1,0 +1,23 @@
+.DS_Store
+Thumbs.db
+.vscode/
+node_modules/
+
+# AI agent files
+.claude/
+CLAUDE.md
+.gemini/
+GEMINI.md
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.continue/
+.clinerules
+.aider*
+AGENTS.md
+
+# graphify
+graphify-out/
+.graphify_*
+.graphifyignore

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Perjalanan Paket: TCP/IP dari Titik ke Titik</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --navy:#142B3D;
+  --ink:#0B1B27;
+  --paper:#EAF2F5;
+  --amber:#E8A33D;
+  --cyan:#4FC7D8;
+  --coral:#E2604F;
+  --grid-line: rgba(234,242,245,0.06);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/40px 40px,
+    var(--navy);
+  color:var(--paper);
+  font-family:'IBM Plex Sans', sans-serif;
+  min-height:100vh;
+  padding:32px 20px 80px;
+}
+
+.wrap{max-width:1100px;margin:0 auto;}
+
+header{margin-bottom:36px;}
+.header-top{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+.eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--cyan);display:inline-block;}
+
+/* language switcher (standalone use — mirrors index.html's switcher and syncs with it via postMessage) */
+.lang-switch{
+  display:flex;
+  flex-shrink:0;
+  border:1px solid rgba(234,242,245,0.2);
+  border-radius:5px;
+  overflow:hidden;
+}
+.lang-btn{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.04em;
+  background:transparent;
+  border:none;
+  color:rgba(234,242,245,0.55);
+  padding:6px 11px;
+  cursor:pointer;
+  transition:background .15s, color .15s;
+}
+.lang-btn + .lang-btn{border-left:1px solid rgba(234,242,245,0.2);}
+.lang-btn:hover{color:var(--paper);}
+.lang-btn.active{background:var(--amber); color:var(--ink); font-weight:600;}
+
+h1{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:clamp(28px,4.2vw,44px);
+  line-height:1.08;
+  margin:12px 0 14px;
+  letter-spacing:-0.01em;
+}
+h1 span{color:var(--amber);}
+.lede{
+  font-size:16px;
+  line-height:1.6;
+  color:rgba(234,242,245,0.78);
+  max-width:640px;
+}
+
+/* ===== STAGE (host - router - host path) ===== */
+.stage{
+  position:relative;
+  border:1px solid rgba(234,242,245,0.14);
+  border-radius:4px;
+  background:rgba(11,27,39,0.5);
+  padding:28px 24px 20px;
+  margin-bottom:22px;
+  overflow:hidden;
+}
+.stage::before{
+  content:attr(data-fig-caption);
+  position:absolute; top:10px; right:14px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10px; letter-spacing:0.12em;
+  color:rgba(234,242,245,0.28);
+}
+
+.path-row{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:150px;
+  margin-bottom:6px;
+}
+.node{
+  position:relative;
+  z-index:3;
+  width:110px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  text-align:center;
+}
+.node-icon{
+  width:56px;height:56px;
+  border:1.5px solid rgba(234,242,245,0.4);
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--ink);
+  transition:border-color .3s, box-shadow .3s;
+}
+.node-icon svg{width:28px;height:28px;stroke:var(--paper);fill:none;stroke-width:1.6;}
+.node-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.05em;color:rgba(234,242,245,0.7);}
+.node-label b{color:var(--paper);display:block;font-size:12px;margin-bottom:2px;}
+.node.active .node-icon{border-color:var(--amber); box-shadow:0 0 0 4px rgba(232,163,61,0.12);}
+
+.wire{
+  position:absolute;
+  left:75px; right:75px; top:28px;
+  height:2px;
+  background:repeating-linear-gradient(90deg, rgba(234,242,245,0.25) 0 6px, transparent 6px 12px);
+  z-index:1;
+}
+.wire-fill{
+  position:absolute; left:0; top:0; height:100%;
+  width:0%;
+  background:var(--cyan);
+  transition:width .5s ease;
+}
+
+.packet-carrier{
+  position:absolute;
+  top:0;
+  left:0;
+  width:64px;
+  transform:translateX(0);
+  transition:left .6s cubic-bezier(.65,0,.35,1);
+  z-index:4;
+  display:flex;
+  flex-direction:column-reverse;
+  align-items:center;
+}
+.layer-chip{
+  width:100%;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9px;
+  text-align:center;
+  padding:3px 0;
+  border-radius:2px;
+  margin-top:3px;
+  color:var(--ink);
+  font-weight:600;
+  opacity:0;
+  transform:scale(0.7);
+  transition:opacity .35s ease, transform .35s ease;
+  white-space:nowrap;
+}
+.layer-chip.show{opacity:1;transform:scale(1);}
+.layer-chip.app{background:var(--paper);}
+.layer-chip.transport{background:var(--cyan);}
+.layer-chip.internet{background:var(--amber);}
+.layer-chip.link{background:var(--coral); color:var(--paper);}
+
+/* ===== CONTROLS ===== */
+.controls{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid rgba(234,242,245,0.12);
+}
+button{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12px;
+  letter-spacing:0.04em;
+  background:transparent;
+  border:1px solid rgba(234,242,245,0.3);
+  color:var(--paper);
+  padding:9px 16px;
+  border-radius:3px;
+  cursor:pointer;
+  transition:all .2s;
+}
+button:hover{border-color:var(--amber); color:var(--amber);}
+button:disabled{opacity:0.3; cursor:not-allowed;}
+button.primary{background:var(--amber); border-color:var(--amber); color:var(--ink); font-weight:600;}
+button.primary:hover{background:#f0b455; color:var(--ink);}
+.step-track{
+  flex:1;
+  min-width:180px;
+  display:flex; gap:4px;
+}
+.step-dot{
+  flex:1; height:4px; background:rgba(234,242,245,0.15); border-radius:2px;
+  transition:background .3s;
+}
+.step-dot.done{background:var(--cyan);}
+.step-dot.now{background:var(--amber);}
+.step-counter{font-family:'IBM Plex Mono',monospace; font-size:11px; color:rgba(234,242,245,0.5); white-space:nowrap;}
+
+/* ===== INFO PANEL ===== */
+.panels{
+  display:grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap:16px;
+  margin-bottom:22px;
+}
+@media (max-width:760px){ .panels{grid-template-columns:1fr;} }
+
+.card{
+  border:1px solid rgba(234,242,245,0.14);
+  background:rgba(11,27,39,0.5);
+  border-radius:4px;
+  padding:22px 24px;
+}
+.card-tag{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  padding:3px 8px;
+  border-radius:2px;
+  display:inline-block;
+  margin-bottom:12px;
+}
+.tag-add{background:rgba(79,199,216,0.15); color:var(--cyan); border:1px solid rgba(79,199,216,0.4);}
+.tag-remove{background:rgba(226,96,79,0.15); color:var(--coral); border:1px solid rgba(226,96,79,0.4);}
+.tag-neutral{background:rgba(232,163,61,0.15); color:var(--amber); border:1px solid rgba(232,163,61,0.4);}
+
+.card h2{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:20px;
+  margin:0 0 10px;
+}
+.card p{font-size:14.5px; line-height:1.65; color:rgba(234,242,245,0.82); margin:0 0 14px;}
+
+.field-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px;}
+.field-list li{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;
+  color:rgba(234,242,245,0.85);
+  display:flex; justify-content:space-between; gap:10px;
+  border-bottom:1px dashed rgba(234,242,245,0.12);
+  padding-bottom:6px;
+}
+.field-list li span:last-child{color:var(--cyan); text-align:right;}
+
+.size-badge{
+  display:inline-flex; align-items:baseline; gap:6px;
+  font-family:'IBM Plex Mono',monospace;
+  margin-top:6px;
+}
+.size-badge b{font-size:26px; color:var(--amber); font-family:'Space Grotesk',sans-serif;}
+.size-badge small{font-size:11px; color:rgba(234,242,245,0.5);}
+
+/* stack visual in side card */
+.stack-visual{display:flex; flex-direction:column-reverse; gap:6px; margin-top:6px;}
+.stack-layer{
+  padding:10px 12px; border-radius:3px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px;
+  display:flex; justify-content:space-between; align-items:center;
+  opacity:0.25; transform:scale(0.97);
+  transition:all .35s ease;
+  border:1px solid transparent;
+}
+.stack-layer.active{opacity:1; transform:scale(1); border-color:rgba(234,242,245,0.3);}
+.stack-layer .l-name{font-weight:600;}
+.stack-layer .l-note{font-size:10.5px; opacity:0.7;}
+.sl-app{background:rgba(234,242,245,0.12); color:var(--paper);}
+.sl-transport{background:rgba(79,199,216,0.18); color:var(--cyan);}
+.sl-internet{background:rgba(232,163,61,0.18); color:var(--amber);}
+.sl-link{background:rgba(226,96,79,0.18); color:var(--coral);}
+
+/* ===== LEGEND / REFERENCE TABLE ===== */
+.legend{
+  border:1px solid rgba(234,242,245,0.14);
+  background:rgba(11,27,39,0.5);
+  border-radius:4px;
+  padding:22px 24px;
+  margin-bottom:22px;
+}
+.legend h3{font-family:'Space Grotesk',sans-serif; font-size:17px; margin:0 0 4px;}
+.legend .sub{font-size:13px; color:rgba(234,242,245,0.55); margin-bottom:16px;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{
+  text-align:left; font-family:'IBM Plex Mono',monospace; font-weight:600;
+  font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+  color:rgba(234,242,245,0.5); padding:8px 10px; border-bottom:1px solid rgba(234,242,245,0.18);
+}
+td{padding:10px 10px; border-bottom:1px solid rgba(234,242,245,0.08); vertical-align:top; line-height:1.5;}
+.swatch{width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:8px;}
+
+footer{
+  text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:rgba(234,242,245,0.35);
+  margin-top:30px;
+  letter-spacing:0.04em;
+}
+
+.loading-note{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  color:rgba(234,242,245,0.5);
+  padding:40px 0;
+  text-align:center;
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap" style="display:none;">
+
+  <header>
+    <div class="header-top">
+      <div class="eyebrow" id="eyebrow"></div>
+      <div class="lang-switch" id="langSwitch"></div>
+    </div>
+    <h1 id="h1"></h1>
+    <p class="lede" id="lede"></p>
+  </header>
+
+  <section class="stage" id="stage">
+    <div class="path-row" id="pathRow">
+      <div class="node" id="nodeA">
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg>
+        </div>
+        <div class="node-label" id="nodeALabel"></div>
+      </div>
+
+      <div class="node" id="nodeR">
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>
+        </div>
+        <div class="node-label" id="nodeRLabel"></div>
+      </div>
+
+      <div class="node" id="nodeB">
+        <div class="node-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg>
+        </div>
+        <div class="node-label" id="nodeBLabel"></div>
+      </div>
+
+      <div class="wire"><div class="wire-fill" id="wireFill"></div></div>
+
+      <div class="packet-carrier" id="carrier" style="left:43px;">
+        <div class="layer-chip app" id="chipApp">DATA</div>
+        <div class="layer-chip transport" id="chipTransport">TCP HEADER</div>
+        <div class="layer-chip internet" id="chipInternet">IP HEADER</div>
+        <div class="layer-chip link" id="chipLink">ETHERNET</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btnPrev"></button>
+      <button id="btnNext" class="primary"></button>
+      <div class="step-track" id="stepTrack"></div>
+      <div class="step-counter" id="stepCounter"></div>
+      <button id="btnReset"></button>
+    </div>
+  </section>
+
+  <section class="panels">
+    <div class="card">
+      <span class="card-tag" id="cardTag">TAG</span>
+      <h2 id="cardTitle">&nbsp;</h2>
+      <p id="cardDesc">&nbsp;</p>
+      <ul class="field-list" id="cardFields"></ul>
+      <div class="size-badge" id="sizeBadge" style="display:none;">
+        <b id="sizeNum">+20</b><small id="sizeUnit"></small>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-tag tag-neutral" id="stackCardTag">BENTUK PAKET SAAT INI</span>
+      <div class="stack-visual" id="stackVisual">
+        <div class="stack-layer sl-link" data-layer="link">
+          <span class="l-name" id="stackNameLink"></span><span class="l-note" id="stackNoteLink"></span>
+        </div>
+        <div class="stack-layer sl-internet" data-layer="internet">
+          <span class="l-name" id="stackNameInternet"></span><span class="l-note" id="stackNoteInternet"></span>
+        </div>
+        <div class="stack-layer sl-transport" data-layer="transport">
+          <span class="l-name" id="stackNameTransport"></span><span class="l-note" id="stackNoteTransport"></span>
+        </div>
+        <div class="stack-layer sl-app" data-layer="app">
+          <span class="l-name" id="stackNameApp"></span><span class="l-note" id="stackNoteApp"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="legend">
+    <h3 id="legendTitle"></h3>
+    <div class="sub" id="legendSub"></div>
+    <table>
+      <thead>
+        <tr id="legendHeaderRow"></tr>
+      </thead>
+      <tbody id="legendBody"></tbody>
+    </table>
+  </section>
+
+  <footer id="footerText"></footer>
+</div>
+
+<div class="loading-note" id="loadingNote">Loading…</div>
+
+<script>
+const LANGS = ['id', 'en'];
+const DEFAULT_LANG = 'en';
+const TOPIC_KEY = 'tcp-ip-layers';
+
+const layerOrder = ['app', 'transport', 'internet', 'link'];
+
+// Structural (non-translatable) data describing each step's visual state.
+// Text content for each index comes from the matching entry in i18n.steps.
+const stepsStructure = [
+  { active:'nodeA', pos:0, chips:[], wire:0, tagClass:'tag-neutral', hasSize:false, sizeNum:null, stack:[] },
+  { active:'nodeA', pos:0, chips:['app','transport'], wire:0, tagClass:'tag-add', hasSize:true, sizeNum:'+20', stack:['transport'] },
+  { active:'nodeA', pos:0, chips:['app','transport','internet'], wire:0, tagClass:'tag-add', hasSize:true, sizeNum:'+20', stack:['transport','internet'] },
+  { active:'nodeA', pos:0, chips:['app','transport','internet','link'], wire:0, tagClass:'tag-add', hasSize:true, sizeNum:'+18', stack:['transport','internet','link'] },
+  { active:null, pos:50, chips:['app','transport','internet','link'], wire:50, tagClass:'tag-neutral', hasSize:false, sizeNum:null, stack:['transport','internet','link'] },
+  { active:'nodeR', pos:50, chips:['app','transport','internet'], wire:50, tagClass:'tag-remove', hasSize:true, sizeNum:'0', stack:['transport','internet'] },
+  { active:null, pos:100, chips:['app','transport','internet','link'], wire:100, tagClass:'tag-neutral', hasSize:false, sizeNum:null, stack:['transport','internet','link'] },
+  { active:'nodeB', pos:100, chips:['app','transport','internet'], wire:100, tagClass:'tag-remove', hasSize:true, sizeNum:'−18', stack:['transport','internet'] },
+  { active:'nodeB', pos:100, chips:['app','transport'], wire:100, tagClass:'tag-remove', hasSize:true, sizeNum:'−20', stack:['transport'] },
+  { active:'nodeB', pos:100, chips:['app'], wire:100, tagClass:'tag-neutral', hasSize:true, sizeNum:'−20', stack:[] }
+];
+
+function getQueryLang(){
+  const params = new URLSearchParams(window.location.search);
+  const lang = params.get('lang');
+  return LANGS.includes(lang) ? lang : null;
+}
+
+let currentLang = getQueryLang() || localStorage.getItem('lang') || DEFAULT_LANG;
+let i18n = null;
+let current = 0;
+let steps = [];
+
+async function loadI18n(lang){
+  const res = await fetch('i18n/' + TOPIC_KEY + '.' + lang + '.json');
+  return res.json();
+}
+
+function buildSteps(){
+  steps = stepsStructure.map((structural, i) => {
+    const text = i18n.steps[i];
+    return {
+      ...structural,
+      tag: text.tag,
+      title: text.title,
+      desc: text.desc,
+      fields: text.fields,
+      size: structural.hasSize ? { num: structural.sizeNum, unit: text.sizeUnit } : null
+    };
+  });
+}
+
+function renderLangSwitch(){
+  const el = document.getElementById('langSwitch');
+  el.innerHTML = '';
+  LANGS.forEach(code => {
+    const btn = document.createElement('button');
+    btn.className = 'lang-btn' + (code === currentLang ? ' active' : '');
+    btn.textContent = code.toUpperCase();
+    btn.addEventListener('click', () => switchLanguage(code));
+    el.appendChild(btn);
+  });
+}
+
+function renderStatic(){
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML =
+    i18n.h1Prefix + '<span>' + i18n.h1Highlight + '</span>' + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+  document.getElementById('stage').setAttribute('data-fig-caption', i18n.figCaption);
+
+  document.getElementById('nodeALabel').innerHTML = '<b>' + i18n.nodes.a.label + '</b>' + i18n.nodes.a.sub;
+  document.getElementById('nodeRLabel').innerHTML = '<b>' + i18n.nodes.r.label + '</b>' + i18n.nodes.r.sub;
+  document.getElementById('nodeBLabel').innerHTML = '<b>' + i18n.nodes.b.label + '</b>' + i18n.nodes.b.sub;
+
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnReset').textContent = i18n.controls.reset;
+
+  document.getElementById('stackCardTag').textContent = i18n.stackCardTag;
+  layerOrder.forEach(layer => {
+    const cap = layer.charAt(0).toUpperCase() + layer.slice(1);
+    document.getElementById('stackName' + cap).textContent = i18n.stackLayers[layer].name;
+    document.getElementById('stackNote' + cap).textContent = i18n.stackLayers[layer].note;
+  });
+
+  document.getElementById('legendTitle').innerHTML = i18n.legend.title;
+  document.getElementById('legendSub').textContent = i18n.legend.sub;
+
+  const headerRow = document.getElementById('legendHeaderRow');
+  headerRow.innerHTML = '';
+  i18n.legend.headers.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    headerRow.appendChild(th);
+  });
+
+  const body = document.getElementById('legendBody');
+  body.innerHTML = '';
+  const swatchColors = ['var(--paper)', 'var(--cyan)', 'var(--amber)', 'var(--coral)'];
+  i18n.legend.rows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><span class="swatch" style="background:' + swatchColors[i] + '"></span>' + row.layer + '</td>' +
+      '<td>' + row.dataName + '</td>' +
+      '<td>' + row.added + '</td>' +
+      '<td>' + row.removed + '</td>';
+    body.appendChild(tr);
+  });
+
+  document.getElementById('footerText').innerHTML = i18n.footer;
+
+  renderLangSwitch();
+}
+
+const carrier = document.getElementById('carrier');
+const wireFill = document.getElementById('wireFill');
+const stepCounter = document.getElementById('stepCounter');
+const stepTrack = document.getElementById('stepTrack');
+const cardTag = document.getElementById('cardTag');
+const cardTitle = document.getElementById('cardTitle');
+const cardDesc = document.getElementById('cardDesc');
+const cardFields = document.getElementById('cardFields');
+const sizeBadge = document.getElementById('sizeBadge');
+const sizeNum = document.getElementById('sizeNum');
+const sizeUnit = document.getElementById('sizeUnit');
+
+const nodeIds = ['nodeA','nodeR','nodeB'];
+const chipIds = { app:'chipApp', transport:'chipTransport', internet:'chipInternet', link:'chipLink' };
+const stackLayers = document.querySelectorAll('.stack-layer');
+
+function buildStepDots(){
+  stepTrack.innerHTML = '';
+  steps.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'step-dot';
+    dot.id = 'dot' + i;
+    stepTrack.appendChild(dot);
+  });
+}
+
+function render(){
+  const s = steps[current];
+
+  const row = document.getElementById('pathRow');
+  const rowWidth = row.clientWidth;
+  const leftMargin = 75;
+  const usableWidth = rowWidth - leftMargin*2 - 64;
+  const xPos = leftMargin + (usableWidth * (s.pos/100));
+  carrier.style.left = xPos + 'px';
+
+  wireFill.style.width = s.wire + '%';
+
+  nodeIds.forEach(id => document.getElementById(id).classList.remove('active'));
+  if(s.active) document.getElementById(s.active).classList.add('active');
+
+  Object.keys(chipIds).forEach(k=>{
+    const el = document.getElementById(chipIds[k]);
+    if(s.chips.includes(k)) el.classList.add('show'); else el.classList.remove('show');
+  });
+
+  cardTag.textContent = s.tag;
+  cardTag.className = 'card-tag ' + s.tagClass;
+  cardTitle.textContent = s.title;
+  cardDesc.textContent = s.desc;
+  cardFields.innerHTML = '';
+  s.fields.forEach(([k,v])=>{
+    const li = document.createElement('li');
+    li.innerHTML = '<span>'+k+'</span><span>'+v+'</span>';
+    cardFields.appendChild(li);
+  });
+
+  if(s.size){
+    sizeBadge.style.display = 'inline-flex';
+    sizeNum.textContent = s.size.num;
+    sizeUnit.textContent = s.size.unit;
+  } else {
+    sizeBadge.style.display = 'none';
+  }
+
+  stackLayers.forEach(el=>{
+    const layer = el.dataset.layer;
+    if(s.stack.includes(layer)) el.classList.add('active'); else el.classList.remove('active');
+  });
+
+  steps.forEach((_,i)=>{
+    const dot = document.getElementById('dot'+i);
+    dot.classList.remove('done','now');
+    if(i < current) dot.classList.add('done');
+    if(i === current) dot.classList.add('now');
+  });
+
+  stepCounter.textContent = i18n.controls.stepCounter
+    .replace('{n}', current+1)
+    .replace('{total}', steps.length);
+  document.getElementById('btnPrev').disabled = current === 0;
+  document.getElementById('btnNext').disabled = current === steps.length - 1;
+  document.getElementById('btnNext').innerHTML = current === steps.length - 1 ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').addEventListener('click', ()=>{
+  if(current < steps.length - 1){ current++; render(); }
+});
+document.getElementById('btnPrev').addEventListener('click', ()=>{
+  if(current > 0){ current--; render(); }
+});
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  current = 0; render();
+});
+window.addEventListener('resize', render);
+
+async function switchLanguage(lang){
+  if(lang === currentLang) return;
+  currentLang = lang;
+  localStorage.setItem('lang', lang);
+  const url = new URL(window.location.href);
+  url.searchParams.set('lang', lang);
+  history.replaceState(null, '', url);
+
+  i18n = await loadI18n(lang);
+  buildSteps();
+  renderStatic();
+  render();
+
+  if(window.parent !== window){
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: lang }, '*');
+  }
+}
+
+(async function init(){
+  i18n = await loadI18n(currentLang);
+  buildSteps();
+  renderStatic();
+  buildStepDots();
+  render();
+  document.getElementById('loadingNote').style.display = 'none';
+  document.getElementById('wrap').style.display = 'block';
+})();
+</script>
+</body>
+</html>

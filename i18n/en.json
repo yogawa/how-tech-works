@@ -1,0 +1,66 @@
+{
+  "ui": {
+    "brandTitle": "How Tech<br>Works",
+    "brandSub": "A collection of interactive visualizations that break down how technology works, step by step, for beginners.",
+    "searchPlaceholder": "Search topics...",
+    "sidebarToggleAria": "Open topic list",
+    "emptyTitle": "Pick a topic on the left",
+    "emptyDesc": "Each topic is a standalone interactive page — click one in the sidebar to start learning.",
+    "aboutLink": "About this project &rarr;",
+    "noResults": "No matching topics."
+  },
+  "categories": {
+    "network": "Networking & Internet",
+    "security": "Security",
+    "systems": "Systems & OS",
+    "tools": "Version Control",
+    "architecture": "Software Architecture",
+    "ai": "AI & Machine Learning"
+  },
+  "topics": {
+    "tcpIpLayers": {
+      "title": "A Packet's Journey: TCP/IP Point to Point",
+      "desc": "How data gets wrapped (encapsulation) and unwrapped (decapsulation) as it travels from one host to another."
+    },
+    "dns": {
+      "title": "DNS: The Internet's Phonebook",
+      "desc": "How your browser translates human-readable domain names into machine-readable IP addresses."
+    },
+    "asymmetricEncryption": {
+      "title": "Asymmetric Encryption: Public & Private Keys",
+      "desc": "Why locking with one key and unlocking with another solves both secret messaging and digital signatures."
+    },
+    "blockchain": {
+      "title": "Blockchain & Consensus",
+      "desc": "How a decentralized chain of blocks secures data using cryptographic hashes and network consensus."
+    },
+    "httpsTls": {
+      "title": "HTTPS/TLS: Handshake, Certificates & Encryption",
+      "desc": "Four scenarios: the full TLS handshake, the certificate chain of trust, TLS 1.2 vs 1.3, and a man-in-the-middle attack simulation."
+    },
+    "eventDrivenArchitecture": {
+      "title": "Event-Driven Architecture: Pub/Sub, Queues & Resilience",
+      "desc": "Four scenarios: the basic publish/subscribe pattern, event queues for async processing, choreography vs orchestration, and why this architecture resists partial failure."
+    },
+    "multithreading": {
+      "title": "Multithreading: Running Tasks Concurrently",
+      "desc": "How computers split work into multiple threads, and how to prevent chaos when they share data."
+    },
+    "dockerVsVm": {
+      "title": "Docker vs. Virtual Machines",
+      "desc": "A side-by-side comparison of how containers eliminate the heavy OS overhead required by traditional VMs."
+    },
+    "aotVsJit": {
+      "title": "AOT vs JIT: When Does Compilation Happen?",
+      "desc": "Four scenarios: the AOT compilation pipeline, the JIT pipeline, the impact on startup & warm-up, and the adaptive optimization that can make JIT faster than AOT."
+    },
+    "git": {
+      "title": "Git: Commits, Branches, Merges & Conflicts",
+      "desc": "Five real scenarios: the basic commit workflow, branching & merging, merge conflicts, reset vs revert, and rebase vs merge."
+    },
+    "llm": {
+      "title": "LLM: How Large Language Models Think",
+      "desc": "How large language models process a prompt from raw text to response — tokenization, embedding, attention, and token generation."
+    }
+  }
+}

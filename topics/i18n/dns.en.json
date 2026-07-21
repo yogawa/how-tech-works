@@ -1,0 +1,81 @@
+{
+  "documentTitle": "DNS: The Internet's Phonebook",
+  "eyebrow": "Networking & Internet",
+  "h1Prefix": "How computers find ",
+  "h1Highlight": "each other by name",
+  "h1Suffix": ".",
+  "lede": "Computers communicate using IP addresses, but humans prefer readable names like 'example.com'. The Domain Name System (DNS) is the phonebook that translates between the two. Whenever you visit a website, a frantic hidden search happens across the globe to find its address. Let's trace that search.",
+  "figCaption": "FIG. 03 — RECURSIVE DNS QUERY",
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart",
+    "done": "Done ✓",
+    "stepCounter": "Step {n} / {total}"
+  },
+  "legend": {
+    "title": "Quick reference: Server Roles",
+    "sub": "The hierarchy of the DNS system.",
+    "headers": ["Role", "Description"],
+    "rows": [
+      {
+        "layer": "Browser / Client",
+        "dataName": "You. Wants to visit 'example.com'."
+      },
+      {
+        "layer": "DNS Resolver",
+        "dataName": "Usually run by your ISP. It does the hard work of asking other servers to find the IP."
+      },
+      {
+        "layer": "Root Server",
+        "dataName": "The top of the hierarchy (.). Directs the Resolver to the appropriate TLD server."
+      },
+      {
+        "layer": "TLD Server",
+        "dataName": "Handles Top Level Domains like .com, .org. Directs the Resolver to the specific domain's server."
+      },
+      {
+        "layer": "Authoritative Server",
+        "dataName": "The final boss. Holds the actual IP address record for 'example.com'."
+      }
+    ]
+  },
+  "footer": "INTERACTIVE DIAGRAM — DNS QUERY LIFECYCLE",
+  "steps": [
+    {
+      "tag": "START",
+      "title": "The Browser asks the local Resolver",
+      "desc": "You type 'example.com' into your browser. Your computer asks its configured DNS Resolver (usually run by your Internet Service Provider): 'Hey, do you know the IP for example.com?'. If the Resolver doesn't have it cached, it starts a recursive search.",
+      "fields": [["Query", "Where is example.com?"], ["Current Stop", "Local Resolver"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "STEP 1",
+      "title": "Asking the Root Server",
+      "desc": "The Resolver first asks a Global Root Server. The Root doesn't know the exact IP for example.com, but it knows who handles '.com' domains. It replies: 'I don't know, but go ask the .com TLD Server at this IP.'",
+      "fields": [["Query", "Where is example.com?"], ["Reply", "Ask the .com TLD Server"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "STEP 2",
+      "title": "Asking the TLD Server",
+      "desc": "The Resolver then goes to the .com Top Level Domain (TLD) Server. The TLD server says: 'I don't know the exact IP, but I know the Authoritative Name Server that manages example.com. Go ask them at this IP.'",
+      "fields": [["Query", "Where is example.com?"], ["Reply", "Ask the Authoritative Server"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "STEP 3",
+      "title": "Asking the Authoritative Server",
+      "desc": "The Resolver finally contacts the Authoritative Name Server. This server is the ultimate source of truth for the domain. It checks its records and proudly replies: 'Yes, example.com is at 192.0.2.1!'",
+      "fields": [["Query", "Where is example.com?"], ["Reply", "It is at 192.0.2.1 (A Record)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "DONE",
+      "title": "Cached and Delivered",
+      "desc": "The Resolver saves (caches) the IP address so it doesn't have to do this whole dance again anytime soon. It then hands the IP address back to your Browser, allowing your Browser to finally make the actual HTTP connection to the website.",
+      "fields": [["Final Result", "192.0.2.1"], ["Action", "Saved in Cache & Returned to Browser"]],
+      "sizeUnit": null
+    }
+  ]
+}

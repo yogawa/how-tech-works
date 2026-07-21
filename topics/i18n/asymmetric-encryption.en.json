@@ -1,0 +1,158 @@
+{
+  "documentTitle": "Asymmetric Encryption: One Key Locks, Another Unlocks",
+  "eyebrow": "Public-Key Cryptography",
+  "h1Prefix": "One key locks it, ",
+  "h1Highlight": "a different key opens it",
+  "h1Suffix": ".",
+  "lede": "Asymmetric (public-key) encryption solves an old problem in cryptography: how can two parties exchange a secret without ever meeting to agree on one shared key? Instead of a single key for everyone, each party holds a pair of keys — one that can be handed out to anyone, and one that must stay secret forever. Try both flows below: sending a secret message, and attaching a digital signature — notice how the two keys get used in exactly opposite directions.",
+  "figCaption": "FIG. 01 — ASYMMETRIC KEY FLOW",
+  "modeTabs": {
+    "encrypt": "🔒 Send a Secret Message",
+    "sign": "✒️ Digital Signature"
+  },
+  "nodes": {
+    "alice": {
+      "label": "Alice",
+      "subEncrypt": "Sender of the secret",
+      "subSign": "Receiver &amp; verifier"
+    },
+    "bob": {
+      "label": "Bob",
+      "sub": "Owner of the key pair"
+    }
+  },
+  "keyring": {
+    "cardTag": "BOB'S KEYRING",
+    "publicLabel": "Public Key",
+    "publicNote": "Safe to share with anyone",
+    "privateLabel": "Private Key",
+    "privateNote": "Must stay secret forever",
+    "holderPublicBefore": "Currently only with Bob",
+    "holderPublicShared": "Held by Bob &amp; anyone who's obtained it (including Alice)",
+    "holderPrivate": "Held only by Bob, never shared"
+  },
+  "carrierLabels": {
+    "public": "🔑 Public Key",
+    "cipher": "🔒 Ciphertext",
+    "sig": "✍️ Message + Signature"
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓",
+    "stepCounter": "Step {n} / {total}"
+  },
+  "tamperDemo": {
+    "toggleLabel": "🧪 Simulate: message altered in transit",
+    "computedHashLabel": "Hash of the message Alice received",
+    "signatureHashLabel": "Hash recovered from the signature (using Bob's public key)",
+    "matchBadge": "✓ Match — message is authentic &amp; untouched",
+    "mismatchBadge": "✗ Mismatch — the message was altered!",
+    "hashOriginal": "a3f9c1e0",
+    "hashTampered": "7b2e44aa",
+    "hashSignature": "a3f9c1e0"
+  },
+  "legend": {
+    "title": "Quick reference: which flow uses which key",
+    "sub": "General rule: the direction each key is used in flips between these two flows.",
+    "headers": ["Flow", "First action", "Final action", "Real-world example"],
+    "rows": [
+      {
+        "flow": "Confidentiality (Encrypt)",
+        "startAction": "Lock the message &rarr; receiver's PUBLIC key",
+        "endAction": "Unlock the message &rarr; receiver's PRIVATE key",
+        "example": "HTTPS session key exchange, encrypted email (PGP/GPG)"
+      },
+      {
+        "flow": "Authenticity (Sign)",
+        "startAction": "Sign it &rarr; sender's PRIVATE key",
+        "endAction": "Verify it &rarr; sender's PUBLIC key",
+        "example": "Software code signing, SSL/TLS certificates, blockchain transactions"
+      }
+    ]
+  },
+  "footer": "INTERACTIVE DIAGRAM — ASYMMETRIC ENCRYPTION: CONFIDENTIALITY &amp; DIGITAL SIGNATURES",
+  "encryptSteps": [
+    {
+      "tag": "START",
+      "title": "Bob generates a key pair",
+      "desc": "Bob runs a one-way math function (a trapdoor function) that produces two keys at once: a public key and a private key. The two are mathematically linked, yet it's computationally infeasible to work out the private key from the public one alone.",
+      "fields": [["Basic math behind it", "multiplying two large prime numbers"], ["Easy to compute one way", "p × q = n"], ["Extremely hard to reverse", "finding p and q from n alone"]]
+    },
+    {
+      "tag": "+ SHARED",
+      "title": "Bob publishes his public key",
+      "desc": "This public key is SAFE to hand out anywhere — a website, an email, a key server. It doesn't matter if an attacker gets a copy too, because this key can only LOCK, never unlock.",
+      "fields": [["What gets shared", "Bob's public key"], ["What stays secret", "Bob's private key — never sent anywhere"]]
+    },
+    {
+      "tag": "RECEIVED",
+      "title": "Alice obtains Bob's public key",
+      "desc": "Alice now has a copy of Bob's public key. It isn't secret — anyone can hold one. The security here doesn't depend on the public key staying hidden, only on the private key staying with Bob alone.",
+      "fields": [["Held by Alice", "Bob's public key (a copy)"], ["Still only with Bob", "Bob's private key"]]
+    },
+    {
+      "tag": "LOCKED",
+      "title": "Alice locks her message with Bob's public key",
+      "desc": "Alice writes a secret message and encrypts it using Bob's public key. Once locked, the message becomes scrambled ciphertext that can ONLY be opened by its matching counterpart — Bob's private key.",
+      "fields": [["Key used to lock", "Bob's public key"], ["Result", "ciphertext — looks like random data"]]
+    },
+    {
+      "tag": "TRANSMISSION",
+      "title": "The ciphertext travels over the open internet",
+      "desc": "This locked message can safely travel over an insecure channel. If it's intercepted, an attacker only sees random-looking data — without Bob's private key, this ciphertext can't be read at all.",
+      "fields": [["What an eavesdropper sees", "random, meaningless ciphertext"], ["What's needed to unlock it", "Bob's private key — never shared"]]
+    },
+    {
+      "tag": "OPENED",
+      "title": "Bob unlocks the ciphertext with his private key",
+      "desc": "Only Bob's private key matches the public key that was used to lock it. Bob decrypts the ciphertext and recovers the original message, exactly as Alice wrote it.",
+      "fields": [["Key used to unlock", "Bob's private key"], ["Result", "the original message, fully intact"]]
+    },
+    {
+      "tag": "DONE",
+      "title": "Takeaway: public locks, private unlocks",
+      "desc": "In this confidentiality flow, the direction is always the same: anyone can lock a message with the receiver's public key, but only the matching private key's owner can unlock it. That's what removes the need for exchanging a shared secret key upfront, unlike symmetric cryptography.",
+      "fields": [["Locking (encrypt)", "use the receiver's PUBLIC key"], ["Unlocking (decrypt)", "use the receiver's PRIVATE key"]]
+    }
+  ],
+  "signSteps": [
+    {
+      "tag": "START",
+      "title": "Bob wants to prove a message truly came from him",
+      "desc": "Bob uses the same key pair as before. This time the goal isn't secrecy — it's proving authenticity: making sure the message really came from him and wasn't altered along the way.",
+      "fields": [["Message", "e.g.: \"Transfer approved.\""], ["Goal", "authentication &amp; integrity, not confidentiality"]]
+    },
+    {
+      "tag": "HASHED",
+      "title": "Bob creates a fingerprint (hash) of his message",
+      "desc": "A hash function turns any message — long or short — into a short, fixed-length string. The smallest change to the message produces a completely different hash.",
+      "fields": [["Original message", "\"Transfer approved.\""], ["Hash (example)", "a3f9c1e0"]]
+    },
+    {
+      "tag": "SIGNED",
+      "title": "Bob encrypts that hash with his PRIVATE key",
+      "desc": "The result of encrypting the hash with the private key is what's called a digital signature. Since only Bob holds that private key, only Bob can produce a valid signature for this exact message.",
+      "fields": [["Key used to sign", "Bob's PRIVATE key"], ["Result", "a digital signature, attached to the message"]]
+    },
+    {
+      "tag": "TRANSMISSION",
+      "title": "The message + signature are sent to Alice",
+      "desc": "Both can travel over any channel, even an insecure one — this message doesn't need to be kept secret, anyone can read its contents. What matters is that its authenticity can be verified later.",
+      "fields": [["Sent", "the original (open) message + a signature"], ["Not encrypted", "the message itself stays plainly readable"]]
+    },
+    {
+      "tag": "VERIFIED",
+      "title": "Alice verifies the signature with Bob's public key",
+      "desc": "Alice recomputes the hash of the message she received, then uses Bob's public key to \"open\" the signature and recover the hash Bob originally created. If the two hashes MATCH, the message is proven authentic and unchanged.",
+      "fields": [["Key used to verify", "Bob's PUBLIC key"], ["What gets compared", "Alice's computed hash vs. the hash from the signature"]]
+    },
+    {
+      "tag": "DONE",
+      "title": "Takeaway: private signs, public verifies",
+      "desc": "In this authenticity flow, the direction flips compared to the confidentiality flow: the signer uses their OWN private key, and anyone can verify using the signer's PUBLIC key. Notice how the direction of key usage is the exact opposite of locking a secret message!",
+      "fields": [["Signing", "use your OWN PRIVATE key"], ["Verifying", "use the signer's PUBLIC key"]]
+    }
+  ]
+}

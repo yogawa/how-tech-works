@@ -1,0 +1,174 @@
+{
+  "documentTitle": "Event-Driven Architecture: Reacting to What Happened, Not Being Told What to Do",
+  "eyebrow": "Software Architecture",
+  "h1Prefix": "Services that never call each other directly, ",
+  "h1Highlight": "yet still work together",
+  "h1Suffix": ".",
+  "lede": "Event-Driven Architecture (EDA) flips how services talk to each other: instead of one service calling another directly and waiting for a reply, a service simply announces 'something just happened' (an event) — and whoever cares can react on their own, whenever they're ready, without the announcer ever needing to know who's listening. Try the four scenarios below — the basic publish/subscribe pattern, how an event queue absorbs sudden load spikes, two ways to coordinate a workflow across services, and why this architecture is far more resilient when one part of the system is having a bad day.",
+  "cases": {
+    "pubsub": "📡 Pub/Sub Basics",
+    "queue": "📥 Event Queue",
+    "choreography": "🎭 Choreography vs Orchestration",
+    "resilience": "🛡️ Sync vs Event-Driven"
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓"
+  },
+  "steps": {
+    "pubsub": [
+      {
+        "tag": "START",
+        "title": "OrderService works alone — nobody's listening yet",
+        "desc": "OrderService just finished processing an order. In a world without events, if any other service needs to know about it (send an email, update stock, log a metric), OrderService would have to call each of those services directly, one by one — and know exactly who to call.",
+        "fields": [["Service", "OrderService"], ["Status", "No notification mechanism yet"]]
+      },
+      {
+        "tag": "SUBSCRIBERS REGISTER",
+        "title": "Three services register as subscribers — without knowing each other",
+        "desc": "EmailService, InventoryService, and AnalyticsService each register their interest in one event type, say \"OrderPlaced\", with the Event Bus. None of them know anything about the other two — and importantly, OrderService doesn't even know they exist.",
+        "fields": [["Registered with the Event Bus", "EmailService, InventoryService, AnalyticsService"], ["Event of interest", "OrderPlaced"]]
+      },
+      {
+        "tag": "EVENT PUBLISHED",
+        "title": "OrderService publishes an OrderPlaced event to the Event Bus",
+        "desc": "OrderService just announces one thing: 'an order was just placed', along with its data. It sends this to the Event Bus and immediately moves on to other work — not caring, or even knowing, who (if anyone) will react to this event.",
+        "fields": [["Published", "an OrderPlaced event"], ["Addressed to", "the Event Bus (not any specific service)"]]
+      },
+      {
+        "tag": "FAN-OUT",
+        "title": "The Event Bus delivers a copy of the event to ALL subscribers at once",
+        "desc": "The Event Bus forwards one copy of the OrderPlaced event to every service that registered earlier — EmailService, InventoryService, and AnalyticsService all receive it simultaneously and independently of one another.",
+        "fields": [["Received by", "EmailService, InventoryService, AnalyticsService"], ["Delivery style", "fan-out — one event, many recipients"]]
+      },
+      {
+        "tag": "PROCESSED INDEPENDENTLY",
+        "title": "Each subscriber processes the event in its own way",
+        "desc": "EmailService sends a confirmation email, InventoryService decrements stock, AnalyticsService logs a metric — all three run at their own pace, without waiting on each other, and without blocking OrderService, which finished long ago and moved on to other work.",
+        "fields": [["EmailService", "sends a confirmation email"], ["InventoryService", "decrements stock"], ["AnalyticsService", "logs a sales metric"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "A new subscriber can be added without touching OrderService's code at all",
+        "desc": "Say the security team wants to add a FraudDetectionService to flag suspicious orders. They just register it as a new subscriber for the OrderPlaced event — OrderService, which publishes that event, doesn't need to be touched, or even redeployed, at all.",
+        "fields": [["New subscriber", "FraudDetectionService"], ["Change needed in OrderService", "none — this is the whole point of decoupling"]]
+      }
+    ],
+    "queue": [
+      {
+        "tag": "START",
+        "title": "A producer, an empty queue, and a consumer ready to work",
+        "desc": "PaymentService (the producer) is about to send events into a queue (a message broker), and NotificationService (the consumer) will pull from it to process them. Right now the queue is empty — nothing has been sent yet.",
+        "fields": [["Producer", "PaymentService"], ["Consumer", "NotificationService"], ["Queue contents", "empty"]]
+      },
+      {
+        "tag": "PRODUCER SENDS A BURST",
+        "title": "The producer sends 5 events in quick succession",
+        "desc": "PaymentService processes five payment transactions in a short span of time, and sends an event into the queue as soon as each one completes. The producer doesn't wait for the queue to be 'empty' first — it just drops the event in and moves on to the next thing.",
+        "fields": [["Events sent", "5 payment events"], ["Queue contents now", "5 events waiting to be processed"]]
+      },
+      {
+        "tag": "CONSUMER PROCESSES ONE AT A TIME",
+        "title": "The consumer pulls events off the front of the queue, one by one",
+        "desc": "NotificationService pulls the oldest event (FIFO), fully processes it, then pulls the next one. The consumer's speed can be wildly different from the producer's — the queue absorbs that difference, instead of forcing the producer to wait.",
+        "fields": [["Processed", "1 event at a time"], ["Queue contents now", "shrinking gradually as items are processed"]]
+      },
+      {
+        "tag": "CONSUMER GOES DOWN ⚠",
+        "title": "NotificationService crashes mid-way — but no event is lost",
+        "desc": "The consumer suddenly stops (say, it's being redeployed, or it crashed). Any events that hadn't been processed yet stay safely sitting in the queue — nothing just disappears. PaymentService doesn't even notice anything's wrong, because it never waits on the consumer to respond in the first place.",
+        "fields": [["Consumer", "offline (down)"], ["Remaining events", "still safely stored in the queue, not lost"]]
+      },
+      {
+        "tag": "CONSUMER CATCHES UP",
+        "title": "NotificationService comes back online and resumes where it left off",
+        "desc": "Once the consumer is back, it immediately resumes pulling events from the queue exactly where it stopped — catching up on everything that piled up while it was down, with nothing needing to be manually resent.",
+        "fields": [["Consumer", "back online"], ["What it does", "drains the backlog of events, one at a time"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "The queue acted as a shock absorber between two different speeds",
+        "desc": "All the events eventually get processed. The queue acted as a buffer, protecting the producer from ever having to wait on the consumer, and protecting the consumer from being overwhelmed by sudden spikes — and it stayed safe even through a brief outage on either side.",
+        "fields": [["Queue contents", "empty again"], ["Main benefit", "absorbs speed mismatches & temporary downtime"]]
+      }
+    ],
+    "choreography": [
+      {
+        "tag": "START",
+        "title": "One business process, three services that must run in order",
+        "desc": "When an order is placed, three things need to happen in sequence: OrderService records the order, PaymentService charges the payment, then ShippingService ships the goods. The question is: who's in charge of making sure this order happens?",
+        "fields": [["Step 1", "OrderService — record the order"], ["Step 2", "PaymentService — charge the payment"], ["Step 3", "ShippingService — ship the goods"]]
+      },
+      {
+        "tag": "TWO APPROACHES",
+        "title": "There are two common ways to coordinate a flow like this",
+        "desc": "Choreography: no central coordinator, each service reacts on its own to events from other services. Orchestration: one central coordinator explicitly tells each service when to do its job.",
+        "fields": [["Choreography", "each service reacts independently to events"], ["Orchestration", "one central coordinator drives every step"]]
+      },
+      {
+        "tag": "CHOREOGRAPHY",
+        "title": "Each service reacts to the previous service's event, independently",
+        "desc": "OrderService publishes an \"OrderPlaced\" event. PaymentService, which subscribes to that event, automatically processes it and then publishes its own \"PaymentCompleted\" event. ShippingService, which subscribes to \"PaymentCompleted\", automatically starts shipping. No single party knows the full flow — everyone is just reacting to whatever event comes their way.",
+        "fields": [["OrderService publishes", "OrderPlaced"], ["PaymentService reacts, then publishes", "PaymentCompleted"], ["ShippingService reacts to", "PaymentCompleted"]]
+      },
+      {
+        "tag": "ORCHESTRATION",
+        "title": "A single Orchestrator explicitly calls each service in sequence",
+        "desc": "For comparison: with orchestration, there's one extra service — an Orchestrator — that actively calls OrderService, waits for it to finish, then calls PaymentService, waits, then calls ShippingService. This Orchestrator knows and drives the entire flow from a single place.",
+        "fields": [["Orchestrator calls", "OrderService → PaymentService → ShippingService, in order"], ["Who knows the full flow", "only the Orchestrator"]]
+      },
+      {
+        "tag": "COMPARE",
+        "title": "The trade-offs run in opposite directions",
+        "desc": "Choreography: no central point that can become a bottleneck, easy to add new reactions without touching other services — but the overall flow becomes hard to see all at once, scattered across many services. Orchestration: the flow is easy to monitor and trace from a single place — but the Orchestrator becomes a single point of failure and can itself become a bottleneck.",
+        "fields": [["Choreography strength", "no single point of failure, easy to extend"], ["Choreography weakness", "the overall flow is scattered, hard to trace"], ["Orchestration strength", "explicit flow, easy to monitor"], ["Orchestration weakness", "the Orchestrator becomes a single point of failure"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "Neither one is 'more correct' — it depends on the need",
+        "desc": "Small teams with simple flows often prefer choreography for its flexibility and ease of extension. Long, complex business processes that need full visibility (say, needing to know exactly 'what stage is this order at') tend to fit orchestration better.",
+        "fields": [["Choreography fits", "simple flows, small teams, need for flexibility"], ["Orchestration fits", "complex flows that need visibility & centralized control"]]
+      }
+    ],
+    "resilience": [
+      {
+        "tag": "START",
+        "title": "The synchronous version: OrderService calls directly and waits",
+        "desc": "In a synchronous design (say, over plain REST APIs), OrderService calls PaymentService directly and WAITS for a reply, and PaymentService in turn calls ShippingService directly and waits for its reply too. Everything is chained together, each link waiting on the next.",
+        "fields": [["Call pattern", "OrderService → (waits) → PaymentService → (waits) → ShippingService"], ["Nature", "blocking — every caller waits for a response"]]
+      },
+      {
+        "tag": "NORMAL CASE (SYNC)",
+        "title": "When everything's healthy, the chain completes — but the customer waits for all of it",
+        "desc": "When all three services are healthy, this call chain eventually completes and the customer gets a success response. But notice: the customer has to wait for the ENTIRE chain to finish — total wait time is the sum of all three services, not just OrderService alone.",
+        "fields": [["Outcome", "success, but slow"], ["Customer wait time", "the sum of all three services"]]
+      },
+      {
+        "tag": "FAILURE CASE (SYNC) ⚠",
+        "title": "ShippingService goes down → the entire chain fails with it",
+        "desc": "Now ShippingService is having trouble and isn't responding. PaymentService's call to ShippingService fails or times out — which makes PaymentService's own call fail — which in turn makes OrderService's call fail too. The customer sees an error message, EVEN THOUGH the payment may already have gone through before the failure happened.",
+        "fields": [["What's down", "ShippingService"], ["The impact", "the failure cascades up to Payment, then to Order"], ["What the customer sees", "an error message, even though payment may already be recorded"]]
+      },
+      {
+        "tag": "NOW, EVENT-DRIVEN",
+        "title": "OrderService just publishes an event and it's done",
+        "desc": "Compare that to the event-driven version: OrderService just publishes an \"OrderPlaced\" event and IMMEDIATELY tells the customer their order was received — without waiting on PaymentService or ShippingService at all.",
+        "fields": [["OrderService", "publishes an event, then it's done"], ["Customer waits on", "only OrderService, not the whole chain"]]
+      },
+      {
+        "tag": "FAILURE CASE (EVENT-DRIVEN)",
+        "title": "ShippingService is down — but nothing else fails with it",
+        "desc": "ShippingService is still having trouble. The difference: the shipping event just sits safely in the queue until ShippingService recovers — PaymentService keeps running normally, and the customer ALREADY got their order-received confirmation long before this problem even happened. No error is visible to the customer at all.",
+        "fields": [["What's down", "ShippingService"], ["The impact", "the event waits in the queue — Payment & the customer response are unaffected"], ["What the customer sees", "no error at all"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "Resilient, at a price: nothing happens all at once anymore",
+        "desc": "Event-driven is far more resilient to partial failures and feels faster to the customer. The price: eventual consistency — the shipment might only actually get processed a little while later, not instantly, and tracing 'what stage is this order at' takes more effort than a synchronous chain, which is easy to trace step by step.",
+        "fields": [["Resilience", "event-driven is far more resilient to partial failures"], ["Trade-off", "eventual consistency — the final result doesn't happen instantly"]]
+      }
+    ]
+  }
+}

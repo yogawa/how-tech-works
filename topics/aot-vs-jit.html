@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AOT vs JIT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #10141C;
+  --panel: rgba(148, 163, 184, 0.05);
+  --panel-border: rgba(148, 163, 184, 0.14);
+  --text: #EAF2FB;
+  --text-dim: rgba(234, 242, 251, 0.68);
+  --text-faint: rgba(234, 242, 251, 0.4);
+
+  --aot: #38BDF8;
+  --jit: #F97316;
+  --native: #34D399;
+  --danger: #F87171;
+  --interp: #94A3B8;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 10% -10%, rgba(56, 189, 248, 0.09) 0%, transparent 50%),
+    radial-gradient(circle at 92% 15%, rgba(249, 115, 22, 0.08) 0%, transparent 50%);
+  color: var(--text);
+  font-family: 'Lexend', sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrap { max-width: 1200px; width: 100%; }
+
+/* Header */
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.header-text { max-width: 660px; }
+.eyebrow {
+  font-family: 'Azeret Mono', monospace; font-size: 12px; color: var(--aot);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: inline-block;
+  padding: 4px 10px; background: rgba(56, 189, 248, 0.1); border-radius: 4px; font-weight: 600;
+}
+h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; margin: 10px 0; line-height: 1.12; letter-spacing: -0.01em; }
+h1 span { color: var(--jit); }
+.lede { font-size: 16.5px; color: var(--text-dim); line-height: 1.65; }
+
+.lang-switch { display: flex; background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.lang-btn { font-family: 'Azeret Mono', monospace; font-size: 12px; background: transparent; border: none; color: var(--text-faint); padding: 8px 16px; cursor: pointer; transition: all .2s; }
+.lang-btn:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.lang-btn.active { background: var(--aot); color: #041019; font-weight: 700; }
+
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab {
+  background: var(--panel); border: 1.5px solid var(--panel-border); color: var(--text-dim);
+  padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13.5px;
+  font-family: 'Lexend', sans-serif; transition: all .2s;
+}
+.tab:hover { border-color: var(--aot); color: var(--text); }
+.tab.active { background: rgba(56,189,248,0.1); border-color: var(--aot); color: var(--aot); }
+
+/* Arena */
+.arena {
+  width: 100%; background: var(--panel); border: 1px solid var(--panel-border);
+  border-radius: 20px; padding: 40px 36px; position: relative;
+  margin-bottom: 32px; min-height: 340px; display: flex; flex-direction: column;
+  backdrop-filter: blur(16px);
+}
+.case-container { display: none; flex: 1; flex-direction: column; justify-content: center; width: 100%; }
+.case-container.active { display: flex; }
+
+/* Pipeline (AOT / JIT) */
+.pipe-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0; row-gap: 18px; justify-content: center; }
+.stage-box { background: var(--bg); border: 1.5px solid var(--panel-border); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 128px; text-align: center; flex-shrink: 0; transition: all .35s; opacity: .5; }
+.stage-box .stage-icon { font-size: 22px; }
+.stage-box .stage-label { font-weight: 700; font-size: 12.5px; color: var(--text); }
+.stage-box .stage-sub { font-family: 'Azeret Mono', monospace; font-size: 9px; color: var(--text-faint); }
+.stage-box.neutral { opacity: 1; }
+.stage-box.focus { opacity: 1; border-color: var(--aot); box-shadow: 0 0 0 4px rgba(56,189,248,0.14); }
+.stage-box.focus.jit-c { border-color: var(--jit); box-shadow: 0 0 0 4px rgba(249,115,22,0.16); }
+.stage-box.interp { opacity: 1; border-color: var(--interp); }
+.stage-box.native-c { opacity: 1; border-color: var(--native); box-shadow: 0 0 0 4px rgba(52,211,153,0.14); }
+.stage-box.danger-c { opacity: 1; border-color: var(--danger); box-shadow: 0 0 0 4px rgba(248,113,113,0.16); }
+
+.pipe-arrow { width: 40px; height: 2px; background: var(--panel-border); flex-shrink: 0; position: relative; margin-top: 18px; }
+.pipe-arrow.aot-c { background: var(--aot); }
+.pipe-arrow.jit-c { background: transparent; border-top: 2px dashed var(--jit); }
+.pipe-arrow.native-c { background: var(--native); }
+@media (max-width: 720px) { .pipe-arrow { width: 20px; } }
+
+/* Warmup speed bars */
+.speed-row { margin-bottom: 22px; }
+.speed-label { font-family: 'Azeret Mono', monospace; font-weight: 700; font-size: 12.5px; color: var(--text); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.speed-pct { color: var(--text-dim); font-weight: 500; }
+.speed-track { height: 28px; background: var(--bg); border: 1.5px solid var(--panel-border); border-radius: 8px; overflow: hidden; }
+.speed-fill { height: 100%; border-radius: 6px; transition: width .6s cubic-bezier(.65,0,.35,1); width: 0; }
+.speed-fill.aot-c { background: linear-gradient(90deg, var(--aot), #7dd3fc); }
+.speed-fill.jit-c { background: linear-gradient(90deg, var(--jit), #fdba74); }
+
+/* Adaptive optimization */
+.call-strip { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+.call-pill { font-family: 'Azeret Mono', monospace; font-size: 10.5px; padding: 5px 10px; border-radius: 12px; background: var(--bg); border: 1px solid var(--panel-border); color: var(--text-dim); }
+.call-pill.int-c { border-color: var(--jit); color: var(--jit); }
+.call-pill.float-c { border-color: var(--danger); color: var(--danger); font-weight: 700; }
+
+/* Player Controls */
+.controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: auto; padding-top: 34px; flex-wrap: wrap; }
+button.control-btn { background: var(--bg); border: 1.5px solid var(--panel-border); color: var(--text); font-family: 'Lexend', sans-serif; font-weight: 600; font-size: 13.5px; padding: 11px 22px; border-radius: 30px; cursor: pointer; transition: all .2s; }
+button.control-btn:hover:not(:disabled) { border-color: var(--aot); color: var(--aot); }
+button.control-btn:disabled { opacity: .35; cursor: not-allowed; }
+button.control-btn.primary { background: var(--aot); border-color: var(--aot); color: #041019; box-shadow: 0 5px 15px rgba(56,189,248,0.25); }
+button.control-btn.primary:hover:not(:disabled) { background: #7dd3fc; color: #041019; }
+
+.timeline { display: flex; gap: 8px; margin: 0 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--panel-border); transition: all .3s; }
+.dot.done { background: var(--jit); }
+.dot.now { background: var(--aot); box-shadow: 0 0 0 4px rgba(56,189,248,0.18); transform: scale(1.2); }
+
+/* Story panel */
+.story-panel { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 28px 30px; backdrop-filter: blur(16px); }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-family: 'Azeret Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .03em; margin-bottom: 14px; background: rgba(56,189,248,0.1); color: var(--aot); }
+.story-title { font-size: 22px; font-weight: 700; margin: 0 0 10px; color: var(--text); }
+.story-desc { font-size: 15px; color: var(--text-dim); line-height: 1.7; margin: 0 0 22px; }
+
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.data-card { background: var(--bg); border: 1px solid var(--panel-border); border-radius: 8px; padding: 14px 15px; }
+.data-label { font-family: 'Azeret Mono', monospace; font-size: 10.5px; color: var(--text-faint); margin-bottom: 5px; letter-spacing: .02em; }
+.data-val { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.5; }
+
+.loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; font-family: 'Azeret Mono', monospace; color: var(--aot); z-index: 100; transition: opacity .5s; }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">CHOOSING WHEN TO COMPILE...</div>
+
+<div class="wrap" id="wrap" style="opacity:0; transition: opacity 1s;">
+  <header>
+    <div class="header-text">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="setCase('aotPipeline')" id="tab-aotPipeline"></div>
+    <div class="tab" onclick="setCase('jitPipeline')" id="tab-jitPipeline"></div>
+    <div class="tab" onclick="setCase('warmup')" id="tab-warmup"></div>
+    <div class="tab" onclick="setCase('adaptive')" id="tab-adaptive"></div>
+  </div>
+
+  <div class="arena">
+    <!-- AOT PIPELINE -->
+    <div class="case-container" id="c-aotPipeline">
+      <div class="pipe-row" id="aot-row"></div>
+    </div>
+
+    <!-- JIT PIPELINE -->
+    <div class="case-container" id="c-jitPipeline">
+      <div class="pipe-row" id="jit-row"></div>
+    </div>
+
+    <!-- WARMUP -->
+    <div class="case-container" id="c-warmup">
+      <div id="warmup-wrap"></div>
+    </div>
+
+    <!-- ADAPTIVE -->
+    <div class="case-container" id="c-adaptive">
+      <div id="adaptive-wrap"></div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="control-btn primary" id="btnNext"></button>
+      <button class="control-btn" id="btnReset" style="margin-left: 10px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+</div>
+
+<script>
+const LANGS = ['id', 'en'];
+let currentLang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('lang') || 'en';
+let i18n = null;
+let currentCase = 'aotPipeline';
+let currentStep = 0;
+
+async function loadData() {
+  const res = await fetch(`i18n/aot-vs-jit.${currentLang}.json`);
+  i18n = await res.json();
+}
+
+function updateStaticUI() {
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + `<span>${i18n.h1Highlight}</span>` + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+
+  document.getElementById('tab-aotPipeline').textContent = i18n.cases.aotPipeline;
+  document.getElementById('tab-jitPipeline').textContent = i18n.cases.jitPipeline;
+  document.getElementById('tab-warmup').textContent = i18n.cases.warmup;
+  document.getElementById('tab-adaptive').textContent = i18n.cases.adaptive;
+
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnReset').innerHTML = i18n.controls.reset;
+
+  const ls = document.getElementById('langSwitch');
+  ls.innerHTML = '';
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (l === currentLang ? ' active' : '');
+    b.innerText = l.toUpperCase();
+    b.onclick = () => setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+/* ---------- shared builders ---------- */
+function stage(icon, label, cls) {
+  return `<div class="stage-box ${cls || ''}"><span class="stage-icon">${icon}</span><span class="stage-label">${label}</span></div>`;
+}
+function arrow(cls) { return `<div class="pipe-arrow ${cls || ''}"></div>`; }
+
+/* ---------- AOT PIPELINE ---------- */
+function resetAot() { document.getElementById('aot-row').innerHTML = ''; }
+function renderAot(step) {
+  const source = stage('📄', 'Source Code', step === 0 ? 'focus' : 'neutral');
+  const compiler = stage('⚙️', 'AOT Compiler', (step === 1 || step === 2) ? 'focus' : (step >= 3 ? 'neutral' : ''));
+  const binary = stage('📦', 'Native Binary', step === 3 ? 'focus native-c' : (step >= 4 ? 'native-c' : ''));
+  const cpu = stage('🖥️', 'CPU', step >= 4 ? 'focus native-c' : '');
+
+  document.getElementById('aot-row').innerHTML =
+    source + arrow(step >= 1 ? 'aot-c' : '') +
+    compiler + arrow(step >= 3 ? 'aot-c' : '') +
+    binary + arrow(step >= 4 ? 'native-c' : '') +
+    cpu;
+}
+
+/* ---------- JIT PIPELINE ---------- */
+function resetJit() { document.getElementById('jit-row').innerHTML = ''; }
+function renderJit(step) {
+  const source = stage('📄', 'Source Code', step === 0 ? 'focus' : 'neutral');
+  const bytecode = stage('📜', 'Bytecode', step >= 1 ? 'neutral' : '');
+  const interpreter = stage('🐢', 'Interpreter', (step === 2 || step === 3) ? 'interp' : (step >= 4 ? 'interp' : ''));
+  const native = stage('⚡', 'Native (hot path)', step === 4 ? 'focus jit-c' : (step === 5 ? 'native-c' : ''));
+
+  document.getElementById('jit-row').innerHTML =
+    source + arrow(step >= 1 ? 'aot-c' : '') +
+    bytecode + arrow(step >= 2 ? 'aot-c' : '') +
+    interpreter + arrow(step >= 4 ? 'jit-c' : '') +
+    native;
+}
+
+/* ---------- WARMUP ---------- */
+const speedByStep = [
+  { aot: 0, jit: 0 },
+  { aot: 100, jit: 15 },
+  { aot: 100, jit: 15 },
+  { aot: 100, jit: 65 },
+  { aot: 100, jit: 100 },
+  { aot: 100, jit: 100 }
+];
+function resetWarmup() { document.getElementById('warmup-wrap').innerHTML = ''; }
+function renderWarmup(step) {
+  const s = speedByStep[step];
+  document.getElementById('warmup-wrap').innerHTML =
+    `<div class="speed-row"><div class="speed-label"><span>AOT</span><span class="speed-pct">${s.aot}%</span></div>` +
+    `<div class="speed-track"><div class="speed-fill aot-c" style="width:${s.aot}%"></div></div></div>` +
+    `<div class="speed-row"><div class="speed-label"><span>JIT</span><span class="speed-pct">${s.jit}%</span></div>` +
+    `<div class="speed-track"><div class="speed-fill jit-c" style="width:${s.jit}%"></div></div></div>`;
+}
+
+/* ---------- ADAPTIVE ---------- */
+function resetAdaptive() { document.getElementById('adaptive-wrap').innerHTML = ''; }
+function renderAdaptive(step) {
+  const fn = stage('🔢', 'add(a, b)', 'neutral');
+  const aotBox = stage('🧊', 'AOT: general code', step === 1 ? 'focus' : (step >= 2 ? 'neutral' : ''));
+  const jitBox = stage('🎯', 'JIT: int-only fast path', step === 3 ? 'focus jit-c' : (step >= 4 ? 'jit-c' : ''));
+  const deoptBox = stage('⚠️', 'Deoptimized', 'focus danger-c');
+  const fallbackBox = stage('🛟', 'Safe fallback', 'interp');
+
+  let pills = '<div class="call-pill int-c">add(3, 4)</div><div class="call-pill int-c">add(10, 2)</div><div class="call-pill int-c">add(7, 7)</div>';
+  if (step >= 4) pills += '<div class="call-pill float-c">add(2.5, 1)</div>';
+
+  let row = '';
+  if (step <= 1) {
+    row = fn + arrow(step >= 1 ? 'aot-c' : '') + aotBox;
+  } else if (step === 2) {
+    row = fn + arrow('aot-c') + aotBox;
+  } else if (step === 3) {
+    row = fn + arrow('jit-c') + jitBox;
+  } else {
+    row = fn + arrow('jit-c') + jitBox + arrow('') + deoptBox + (step === 5 ? arrow('') + fallbackBox : '');
+  }
+
+  document.getElementById('adaptive-wrap').innerHTML =
+    `<div class="pipe-row">${row}</div><div class="call-strip">${pills}</div>`;
+}
+
+/* ---------- generic step render ---------- */
+const RENDERERS = { aotPipeline: renderAot, jitPipeline: renderJit, warmup: renderWarmup, adaptive: renderAdaptive };
+const RESETTERS = { aotPipeline: resetAot, jitPipeline: resetJit, warmup: resetWarmup, adaptive: resetAdaptive };
+
+function setCase(c) {
+  currentCase = c;
+  currentStep = 0;
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${c}`).classList.add('active');
+
+  document.querySelectorAll('.case-container').forEach(cc => cc.classList.remove('active'));
+  document.getElementById(`c-${c}`).classList.add('active');
+
+  RESETTERS[c]();
+  renderStep();
+}
+
+function renderStep() {
+  const steps = i18n.steps[currentCase];
+  const data = steps[currentStep];
+
+  RENDERERS[currentCase](currentStep);
+
+  document.getElementById('tag').textContent = data.tag;
+  document.getElementById('storyTitle').textContent = data.title;
+  document.getElementById('storyDesc').textContent = data.desc;
+
+  const grid = document.getElementById('dataGrid');
+  grid.innerHTML = '';
+  data.fields.forEach(([lbl, val]) => {
+    grid.innerHTML += `<div class="data-card"><div class="data-label">${lbl}</div><div class="data-val">${val}</div></div>`;
+  });
+
+  const track = document.getElementById('stepTrack');
+  track.innerHTML = '';
+  for (let i = 0; i < steps.length; i++) {
+    let cls = 'dot';
+    if (i < currentStep) cls += ' done';
+    if (i === currentStep) cls += ' now';
+    track.innerHTML += `<div class="${cls}"></div>`;
+  }
+
+  document.getElementById('btnPrev').disabled = (currentStep === 0);
+  document.getElementById('btnNext').innerHTML = (currentStep === steps.length - 1) ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').onclick = () => { const len = i18n.steps[currentCase].length; if (currentStep < len - 1) { currentStep++; renderStep(); } };
+document.getElementById('btnPrev').onclick = () => { if (currentStep > 0) { currentStep--; renderStep(); } };
+document.getElementById('btnReset').onclick = () => { currentStep = 0; renderStep(); };
+
+async function setLang(l) {
+  if (l === currentLang) return;
+  currentLang = l;
+  localStorage.setItem('lang', l);
+  const u = new URL(window.location);
+  u.searchParams.set('lang', l);
+  history.replaceState(null, '', u);
+
+  await loadData();
+  updateStaticUI();
+  renderStep();
+
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: l }, '*');
+  }
+}
+
+async function init() {
+  await loadData();
+  updateStaticUI();
+  setCase('aotPipeline');
+
+  document.getElementById('loadingNote').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loadingNote').style.display = 'none';
+    document.getElementById('wrap').style.opacity = '1';
+  }, 500);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+{
+  "documentTitle": "Git: One History, Many Scenarios",
+  "eyebrow": "Version Control with Git",
+  "h1Prefix": "One history of changes, ",
+  "h1Highlight": "many ways to shape it",
+  "h1Suffix": ".",
+  "lede": "Git stores every code change as a linked snapshot (a commit), and lets multiple lines of development (branches) run side by side. Instead of one linear walkthrough, try five real-world scenarios below — from the very first commit, branching and merging back together, a conflict that must be resolved by hand, two different ways to undo a mistake, all the way to the difference between rebase and merge — each one shapes history in its own way.",
+  "cases": {
+    "workflow": "📁 Basic Commit Workflow",
+    "branching": "🌿 Branching & Merging",
+    "conflict": "⚠️ Merge Conflict",
+    "undo": "↩️ Reset vs Revert",
+    "rebase": "🔀 Rebase vs Merge"
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓"
+  },
+  "steps": {
+    "workflow": [
+      {
+        "tag": "UNTRACKED",
+        "title": "A new file is created in the Working Directory",
+        "desc": "hello.txt was just created in the project folder. Git doesn't know anything about it yet — its status is 'untracked', meaning the file exists on disk but has never entered Git's tracking system at all.",
+        "fields": [["File", "hello.txt"], ["Status", "Untracked"], ["Location", "Working Directory"]]
+      },
+      {
+        "tag": "STAGED",
+        "title": "git add hello.txt — moving the file to the Staging Area",
+        "desc": "git add doesn't save the file permanently — it just marks: 'this version of the file is ready to be included in the next commit'. The file now sits in the Staging Area (also called the index), a kind of waiting room before a commit.",
+        "fields": [["Command", "git add hello.txt"], ["Status", "Staged (ready to commit)"], ["Location", "Staging Area"]]
+      },
+      {
+        "tag": "FIRST COMMIT",
+        "title": "git commit — a permanent snapshot lands in the Repository",
+        "desc": "git commit takes everything in the Staging Area and stores it as a permanent snapshot called a commit, inside the Repository (the .git folder). This first commit, call it C1, is now officially part of the project's history.",
+        "fields": [["Command", "git commit -m \"initial commit\""], ["New commit", "C1"], ["Location", "Repository (.git)"]]
+      },
+      {
+        "tag": "EDITED AGAIN",
+        "title": "The file is edited again — back to the Working Directory",
+        "desc": "hello.txt gets edited again. This time its status is NOT 'untracked' — it's 'modified', because Git already tracked this file in commit C1, and now detects its content differs from that last committed version.",
+        "fields": [["Status", "Modified (differs from the last commit)"], ["Location", "Working Directory"], ["Difference from step 1", "Untracked = never committed before. Modified = tracked before, but changed again."]]
+      },
+      {
+        "tag": "THE CYCLE REPEATS",
+        "title": "git add + git commit again — the same cycle repeats",
+        "desc": "Just like before: git add moves the change into the Staging Area, then git commit stores it as a second commit (C2). This is Git's core cycle, and it will keep repeating every time there's a change: Working Directory → Staging Area → Repository.",
+        "fields": [["New commit", "C2"], ["History now", "C1 → C2"], ["The cycle", "Working Directory → Staging → Repository, repeating"]]
+      }
+    ],
+    "branching": [
+      {
+        "tag": "START",
+        "title": "The main branch has two commits",
+        "desc": "The project starts with the main branch (the default branch), which already has two commits, C1 and C2. HEAD — the pointer to 'which commit you're currently on' — and the main branch both point to C2.",
+        "fields": [["Branch", "main"], ["History", "C1 → C2"], ["HEAD points to", "main (C2)"]]
+      },
+      {
+        "tag": "NEW BRANCH",
+        "title": "git branch feature + git checkout feature",
+        "desc": "A new branch called feature is created. A branch is just a lightweight label pointing at a commit — here, feature is created pointing at the same commit as main (C2). After checkout, HEAD moves to follow feature.",
+        "fields": [["Command", "git checkout -b feature"], ["Branch point", "C2 (same as main)"], ["HEAD points to", "feature (C2)"]]
+      },
+      {
+        "tag": "COMMIT ON FEATURE",
+        "title": "A new commit is made, but only on the feature branch",
+        "desc": "A new commit, C3, is created while on the feature branch. Only feature's pointer moves forward to C3 — the main branch stays put at C2, completely unaffected by whatever happens on feature.",
+        "fields": [["Active branch", "feature"], ["feature's history", "C1 → C2 → C3"], ["main's history", "C1 → C2 (unchanged)"]]
+      },
+      {
+        "tag": "SWITCH BRANCH",
+        "title": "git checkout main — back to the main branch",
+        "desc": "The developer switches back to the main branch. HEAD now points to main again, which is still at C2 — the C3 commit made on feature is 'invisible' from here until it's merged in.",
+        "fields": [["Command", "git checkout main"], ["HEAD points to", "main (C2)"], ["C3", "only exists in feature's history"]]
+      },
+      {
+        "tag": "MERGE",
+        "title": "git merge feature — Git chooses a fast-forward",
+        "desc": "Since main never moved since feature was created (main is still exactly at C2, its own branch point), Git doesn't need to create a new merge commit at all. It simply slides main's pointer forward to match feature — this is called a fast-forward merge.",
+        "fields": [["Command", "git merge feature"], ["Merge type", "Fast-forward (no new merge commit)"], ["main now points to", "C3"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "main and feature now point to the same commit",
+        "desc": "After the fast-forward, main and feature both point to C3 — history stays a single straight line, with no visible branching in the commit graph. The feature branch is now safe to delete, since all its content has already merged into main.",
+        "fields": [["Final history", "C1 → C2 → C3"], ["main", "C3"], ["feature", "C3 (safe to delete: git branch -d feature)"]]
+      }
+    ],
+    "conflict": [
+      {
+        "tag": "BRANCH POINT",
+        "title": "Both branches share the same line since commit C2",
+        "desc": "Line 5 of notes.txt holds the same text on both branches, because they both descend from the same commit, C2. From this point on, main and feature will each change this exact line separately — this is where the conflict is seeded.",
+        "fields": [["File", "notes.txt (line 5)"], ["Line 5 content at C2", "\"Hello from the team.\""], ["Branches", "main & feature, both from C2"]],
+        "code": ["# notes.txt", "Team notes", "", "Important line:", "Hello from the team."]
+      },
+      {
+        "tag": "COMMIT ON FEATURE",
+        "title": "On the feature branch: line 5 is changed",
+        "desc": "While on the feature branch, line 5 is changed to the feature's version, then committed as C3f. So far there's no problem — main has no idea this change even exists.",
+        "fields": [["Active branch", "feature"], ["Line 5 now", "\"Hello from feature!\""], ["Commit", "C3f"]],
+        "code": ["# notes.txt", "Team notes", "", "Important line:", "Hello from feature!"]
+      },
+      {
+        "tag": "COMMIT ON MAIN",
+        "title": "Back on main: the SAME line is also changed",
+        "desc": "Another developer (or the same developer at a different time) changes the exact same line 5 on the main branch, with different content, then commits it as C3m. Now both branches hold two different versions of the same line.",
+        "fields": [["Active branch", "main"], ["Line 5 now", "\"Hello from main!\""], ["Commit", "C3m"]],
+        "code": ["# notes.txt", "Team notes", "", "Important line:", "Hello from main!"]
+      },
+      {
+        "tag": "MERGE FAILS ⚠",
+        "title": "git merge feature — Git can't decide on its own",
+        "desc": "Git tries to combine both versions of line 5, but since both sides changed the exact same line with different content, Git gives up and marks the file CONFLICT. notes.txt now contains both versions, separated by conflict markers.",
+        "fields": [["Command", "git merge feature"], ["Result", "CONFLICT (content): notes.txt"], ["Requires a human to", "pick which version is correct"]],
+        "code": ["# notes.txt", "Team notes", "", "Important line:", "<<<<<<< HEAD", "Hello from main!", "=======", "Hello from feature!", ">>>>>>> feature"]
+      },
+      {
+        "tag": "MANUAL RESOLUTION",
+        "title": "The developer opens the file and decides on the final content",
+        "desc": "There's no magic here — a human has to decide. The developer deletes all four conflict markers (<<<<<<<, =======, >>>>>>>, and whichever version isn't wanted), then writes the final content for line 5, for example a combination of both.",
+        "fields": [["Final content of line 5", "\"Hello from main and feature!\""], ["Conflict markers", "all removed"], ["Next step", "git add notes.txt"]],
+        "code": ["# notes.txt", "Team notes", "", "Important line:", "Hello from main and feature!"]
+      },
+      {
+        "tag": "DONE",
+        "title": "git commit finishes the merge with a merge commit",
+        "desc": "Once git add marks the conflict as resolved, git commit creates a new commit, C4, that's special: it has TWO parents at once (C3m and C3f). This is a merge commit — proof that two official history lines came back together right here.",
+        "fields": [["New commit", "C4 (merge commit)"], ["Parents of C4", "C3m and C3f"], ["Final history", "C1 → C2 → (C3m & C3f) → C4"]],
+        "code": ["# notes.txt", "Team notes", "", "Important line:", "Hello from main and feature!"]
+      }
+    ],
+    "undo": [
+      {
+        "tag": "START",
+        "title": "A linear history with one problem commit",
+        "desc": "The main branch has three commits: C1, C2, C3. It later turns out C3 is broken — say it accidentally deleted an important line of code. The question is: what's the safest way to undo it?",
+        "fields": [["History", "C1 → C2 → C3"], ["Problem in", "C3 (\"accidentally deleted the login() function\")"], ["HEAD & main", "C3"]]
+      },
+      {
+        "tag": "TWO CHOICES",
+        "title": "It depends: has it been shared with anyone yet, or not?",
+        "desc": "Git has two main ways to undo a commit, and the right choice hinges on one important question: has commit C3 already been pushed and seen/used by others, or is it still purely local to your machine?",
+        "fields": [["If still local (not pushed)", "use git reset"], ["If already shared (pushed)", "use git revert"]]
+      },
+      {
+        "tag": "OPTION A: RESET",
+        "title": "Local scenario: git reset --hard C2",
+        "desc": "Since C3 was never shared with anyone, it's safe to 'rewind time' — reset moves the main branch pointer straight back to C2, as if C3 never existed. This directly REWRITES history.",
+        "fields": [["Command", "git reset --hard C2"], ["main & HEAD now", "C2"], ["C3", "no longer part of any branch's history"]]
+      },
+      {
+        "tag": "RESET RESULT",
+        "title": "Commit C3 vanishes from the branch history",
+        "desc": "From main's point of view, it's as if C3 was never created. This is clean and simple — BUT dangerous if anyone had already pulled C3 before the reset: their history would no longer line up with the newly rewritten main.",
+        "fields": [["main's history now", "C1 → C2"], ["Risk", "dangerous if C3 was ever shared with anyone else"]]
+      },
+      {
+        "tag": "OPTION B: REVERT",
+        "title": "Shared scenario: git revert C3 (starting over from the original history)",
+        "desc": "This time, assume C3 was ALREADY pushed and already pulled by teammates. Removing C3 from history (like reset does) would break their repositories. The fix: revert creates a NEW commit whose content undoes C3's changes, without deleting anything.",
+        "fields": [["Command", "git revert C3"], ["History before", "C1 → C2 → C3"], ["Principle", "add a new commit, never delete an old one"]]
+      },
+      {
+        "tag": "REVERT RESULT",
+        "title": "A new commit C4 patches over the damage C3 caused",
+        "desc": "C3 stays in the history — proof that the change did happen is preserved — but its effect is undone by the new C4. Since no old commit was deleted or altered, everyone who already has C3 can safely keep working from C4.",
+        "fields": [["New commit", "C4 (undoes C3's effect)"], ["History now", "C1 → C2 → C3 → C4"], ["Safe for shared history?", "Yes"]]
+      },
+      {
+        "tag": "SUMMARY",
+        "title": "When to use reset, when to use revert",
+        "desc": "An easy rule of thumb: if the commit is still your own private business (not pushed yet), reset is free to use for tidying up history. The moment it's been seen by anyone else, never rewrite old history — always add a new commit via revert instead.",
+        "fields": [["git reset", "rewrites history — only for local commits, not yet shared"], ["git revert", "adds to history — safe for commits that are already shared/pushed"]]
+      }
+    ],
+    "rebase": [
+      {
+        "tag": "BRANCH POINT",
+        "title": "main and feature have both moved forward since C2",
+        "desc": "Just like the branching scenario, feature was created from C2. But this time, AFTER that, main also kept receiving new commits from another developer. Both branches now have their own commits since the same branch point — they've diverged.",
+        "fields": [["main's history", "C1 → C2 → C3m"], ["feature's history", "C1 → C2 → C3f"], ["Shared branch point", "C2"]]
+      },
+      {
+        "tag": "TWO CHOICES",
+        "title": "Bringing feature back into main: two different ways",
+        "desc": "Because main has already moved on its own, the simple fast-forward merge from earlier no longer applies. There are two common ways to bring feature back into main, and they produce very different shapes of history.",
+        "fields": [["Option A", "git merge — keeps the branching shape exactly as it happened"], ["Option B", "git rebase — rewrites feature's history to be straight"]]
+      },
+      {
+        "tag": "OPTION A: MERGE",
+        "title": "git merge feature from the main branch",
+        "desc": "Git creates a new commit, C4, that combines both branch tips (C3m and C3f) as two parents at once. Both original commit paths remain visible exactly as they happened — the shape looks like a diamond that splits and rejoins.",
+        "fields": [["Command", "git merge feature"], ["New commit", "C4 (merge commit, 2 parents)"], ["History shape", "splits then rejoins (non-linear)"]]
+      },
+      {
+        "tag": "OPTION B: REBASE",
+        "title": "git rebase main from the feature branch (starting over from the same point)",
+        "desc": "This time, instead of merging, Git 'replays' commit C3f as if it had been created right after C3m — the result is a new commit with the same content but a different hash, call it C3f'. The original C3f is left behind.",
+        "fields": [["Command", "git rebase main (run from the feature branch)"], ["Commit rewritten", "C3f → C3f' (new hash, same content)"], ["History shape", "straight/linear, no merge commit"]]
+      },
+      {
+        "tag": "COMPARE",
+        "title": "Same final content, totally different history shape",
+        "desc": "Looking at the final file content, merge and rebase produce identical results. The difference is purely in the SHAPE of the commit graph: merge honestly leaves a trace of the branching that happened, rebase makes it look as if the work had been done sequentially from the start.",
+        "fields": [["Merge result", "C1 → C2 → C3m → C4 ← C3f (branched)"], ["Rebase result", "C1 → C2 → C3m → C3f' (straight)"]]
+      },
+      {
+        "tag": "IMPORTANT WARNING",
+        "title": "Never rebase a commit that's already been shared with others",
+        "desc": "Because rebase replaces old commit hashes with new ones, anyone who already pulled the old version of that commit ends up with a history that 'differs' from yours — confusing, and risking duplicated commits. The safe rule: only rebase local commits that have never been pushed.",
+        "fields": [["Safe to use on", "local commits, not yet pushed"], ["Avoid on", "commits already pushed & used by others"]]
+      }
+    ]
+  }
+}

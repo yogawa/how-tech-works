@@ -1,0 +1,219 @@
+{
+  "documentTitle": "Git: Satu Histori, Banyak Skenario",
+  "eyebrow": "Version Control dengan Git",
+  "h1Prefix": "Satu histori perubahan, ",
+  "h1Highlight": "banyak cara mengaturnya",
+  "h1Suffix": ".",
+  "lede": "Git menyimpan setiap perubahan kode sebagai snapshot (commit) yang saling terhubung, dan mengizinkan banyak jalur pengembangan (branch) berjalan berdampingan. Alih-alih satu alur linear, coba lima skenario nyata di bawah ini — dari commit pertama, bercabang lalu bergabung lagi, konflik yang harus diselesaikan manual, dua cara membatalkan kesalahan, sampai beda rebase dan merge — masing-masing punya cara sendiri mengatur histori.",
+  "cases": {
+    "workflow": "📁 Alur Dasar Commit",
+    "branching": "🌿 Branching & Merging",
+    "conflict": "⚠️ Konflik Merge",
+    "undo": "↩️ Reset vs Revert",
+    "rebase": "🔀 Rebase vs Merge"
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓"
+  },
+  "steps": {
+    "workflow": [
+      {
+        "tag": "BELUM DILACAK",
+        "title": "File baru dibuat di Working Directory",
+        "desc": "hello.txt baru saja dibuat di folder proyek. Git belum tahu-menahu soal file ini — statusnya 'untracked', artinya file ini ada di disk tapi belum pernah masuk ke sistem penelusuran Git sama sekali.",
+        "fields": [["File", "hello.txt"], ["Status", "Untracked (belum dilacak)"], ["Lokasi", "Working Directory"]]
+      },
+      {
+        "tag": "DI-STAGE",
+        "title": "git add hello.txt — memindahkan file ke Staging Area",
+        "desc": "Perintah git add tidak menyimpan file secara permanen, ia hanya menandai: 'versi file ini siap ikut di commit berikutnya'. File sekarang ada di Staging Area (disebut juga index), semacam ruang tunggu sebelum commit.",
+        "fields": [["Perintah", "git add hello.txt"], ["Status", "Staged (siap di-commit)"], ["Lokasi", "Staging Area"]]
+      },
+      {
+        "tag": "COMMIT PERTAMA",
+        "title": "git commit — snapshot permanen masuk ke Repository",
+        "desc": "git commit mengambil semua yang ada di Staging Area dan menyimpannya sebagai snapshot permanen bernama commit di Repository (folder .git). Commit pertama ini, sebut saja C1, sekarang jadi bagian resmi dari histori proyek.",
+        "fields": [["Perintah", "git commit -m \"commit awal\""], ["Commit baru", "C1"], ["Lokasi", "Repository (.git)"]]
+      },
+      {
+        "tag": "DIUBAH LAGI",
+        "title": "File diedit lagi — kembali ke Working Directory",
+        "desc": "hello.txt diedit lagi. Kali ini statusnya BUKAN 'untracked', melainkan 'modified' — karena Git sudah pernah melacak file ini di commit C1, dan sekarang mendeteksi isinya berbeda dari versi commit terakhir.",
+        "fields": [["Status", "Modified (berbeda dari commit terakhir)"], ["Lokasi", "Working Directory"], ["Beda dengan langkah 1", "Untracked = belum pernah di-commit. Modified = sudah pernah, tapi berubah lagi."]]
+      },
+      {
+        "tag": "SIKLUS BERULANG",
+        "title": "git add + git commit lagi — siklus yang sama berulang",
+        "desc": "Persis seperti sebelumnya: git add memindahkan perubahan ke Staging Area, lalu git commit menyimpannya sebagai commit kedua (C2). Inilah siklus inti Git yang akan terus berulang setiap kali ada perubahan: Working Directory → Staging Area → Repository.",
+        "fields": [["Commit baru", "C2"], ["Histori sekarang", "C1 → C2"], ["Siklus", "Working Directory → Staging → Repository, berulang"]]
+      }
+    ],
+    "branching": [
+      {
+        "tag": "MULAI",
+        "title": "Branch main punya dua commit",
+        "desc": "Proyek dimulai dengan branch main (branch default) yang sudah punya dua commit, C1 dan C2. HEAD — penunjuk 'kamu sedang di commit mana' — dan branch main sama-sama menunjuk ke C2.",
+        "fields": [["Branch", "main"], ["Histori", "C1 → C2"], ["HEAD menunjuk ke", "main (C2)"]]
+      },
+      {
+        "tag": "BRANCH BARU",
+        "title": "git branch feature + git checkout feature",
+        "desc": "Sebuah branch baru bernama feature dibuat. Branch hanyalah label ringan yang menunjuk ke sebuah commit — di sini, feature dibuat menunjuk ke commit yang sama seperti main (C2). Setelah checkout, HEAD berpindah mengikuti feature.",
+        "fields": [["Perintah", "git checkout -b feature"], ["Titik cabang", "C2 (sama dengan main)"], ["HEAD menunjuk ke", "feature (C2)"]]
+      },
+      {
+        "tag": "COMMIT DI FEATURE",
+        "title": "Commit baru dibuat, tapi hanya di branch feature",
+        "desc": "Sebuah commit baru, C3, dibuat saat berada di branch feature. Hanya penunjuk feature yang maju ke C3 — branch main tetap diam di C2, tidak terpengaruh sama sekali oleh apa yang terjadi di feature.",
+        "fields": [["Branch aktif", "feature"], ["Histori feature", "C1 → C2 → C3"], ["Histori main", "C1 → C2 (tidak berubah)"]]
+      },
+      {
+        "tag": "PINDAH BRANCH",
+        "title": "git checkout main — kembali ke branch main",
+        "desc": "Developer berpindah kembali ke branch main. HEAD sekarang menunjuk ke main lagi, yang isinya masih C2 — commit C3 yang dibuat di feature 'tidak terlihat' dari sini sampai nanti digabungkan.",
+        "fields": [["Perintah", "git checkout main"], ["HEAD menunjuk ke", "main (C2)"], ["C3", "hanya ada di riwayat branch feature"]]
+      },
+      {
+        "tag": "MERGE",
+        "title": "git merge feature — Git memilih fast-forward",
+        "desc": "Karena main tidak pernah bergerak sejak feature dibuat (main masih persis di C2, titik cabangnya sendiri), Git tidak perlu membuat commit gabungan baru. Ia cukup menggeser penunjuk main maju mengikuti feature — ini disebut fast-forward merge.",
+        "fields": [["Perintah", "git merge feature"], ["Jenis merge", "Fast-forward (tanpa commit gabungan baru)"], ["main sekarang menunjuk ke", "C3"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "main dan feature kini menunjuk ke commit yang sama",
+        "desc": "Setelah fast-forward, main dan feature sama-sama menunjuk ke C3 — histori tetap satu garis lurus, tidak ada percabangan yang terlihat di grafik commit. Branch feature sekarang aman dihapus karena semua isinya sudah menyatu dengan main.",
+        "fields": [["Histori akhir", "C1 → C2 → C3"], ["main", "C3"], ["feature", "C3 (boleh dihapus: git branch -d feature)"]]
+      }
+    ],
+    "conflict": [
+      {
+        "tag": "TITIK CABANG",
+        "title": "Kedua branch berbagi baris yang sama sejak commit C2",
+        "desc": "File notes.txt baris ke-5 berisi teks yang sama di kedua branch, karena keduanya berasal dari commit C2 yang sama. Dari titik inilah main dan feature akan sama-sama mengubah baris ini secara terpisah — inilah bibit konfliknya.",
+        "fields": [["File", "notes.txt (baris 5)"], ["Isi baris 5 di C2", "\"Halo dari tim.\""], ["Branch", "main & feature, sama-sama dari C2"]],
+        "code": ["# notes.txt", "Catatan tim", "", "Baris penting:", "Halo dari tim."]
+      },
+      {
+        "tag": "COMMIT DI FEATURE",
+        "title": "Di branch feature: baris 5 diubah",
+        "desc": "Saat berada di branch feature, baris 5 diubah menjadi versi feature, lalu di-commit sebagai C3f. Sejauh ini tidak ada masalah — main sama sekali belum tahu perubahan ini.",
+        "fields": [["Branch aktif", "feature"], ["Baris 5 sekarang", "\"Halo dari feature!\""], ["Commit", "C3f"]],
+        "code": ["# notes.txt", "Catatan tim", "", "Baris penting:", "Halo dari feature!"]
+      },
+      {
+        "tag": "COMMIT DI MAIN",
+        "title": "Kembali ke main: baris yang SAMA juga diubah",
+        "desc": "Developer lain (atau developer yang sama di waktu berbeda) mengubah baris 5 yang PERSIS sama di branch main, dengan isi yang berbeda, lalu commit sebagai C3m. Sekarang dua branch punya dua versi berbeda untuk satu baris yang sama.",
+        "fields": [["Branch aktif", "main"], ["Baris 5 sekarang", "\"Halo dari main!\""], ["Commit", "C3m"]],
+        "code": ["# notes.txt", "Catatan tim", "", "Baris penting:", "Halo dari main!"]
+      },
+      {
+        "tag": "MERGE GAGAL ⚠",
+        "title": "git merge feature — Git tidak bisa memutuskan sendiri",
+        "desc": "Git mencoba menggabungkan kedua versi baris 5, tapi karena keduanya sama-sama mengubah baris yang identik dengan isi berbeda, Git menyerah dan menandai file ini CONFLICT. File notes.txt sekarang berisi kedua versi, dipisahkan penanda konflik.",
+        "fields": [["Perintah", "git merge feature"], ["Hasil", "CONFLICT (content): notes.txt"], ["Harus dikerjakan manusia", "memilih versi mana yang benar"]],
+        "code": ["# notes.txt", "Catatan tim", "", "Baris penting:", "<<<<<<< HEAD", "Halo dari main!", "=======", "Halo dari feature!", ">>>>>>> feature"]
+      },
+      {
+        "tag": "RESOLUSI MANUAL",
+        "title": "Developer membuka file dan memilih isi akhirnya",
+        "desc": "Tidak ada keajaiban di sini — manusia yang harus memutuskan. Developer menghapus keempat penanda konflik (<<<<<<<, =======, >>>>>>>, dan salah satu versi yang tidak dipakai), lalu menuliskan isi final baris 5, misalnya gabungan keduanya.",
+        "fields": [["Isi akhir baris 5", "\"Halo dari main dan feature!\""], ["Penanda konflik", "sudah dihapus semua"], ["Langkah selanjutnya", "git add notes.txt"]],
+        "code": ["# notes.txt", "Catatan tim", "", "Baris penting:", "Halo dari main dan feature!"]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "git commit menyelesaikan merge dengan sebuah merge commit",
+        "desc": "Setelah git add menandai konflik sudah diselesaikan, git commit membuat commit baru, C4, yang istimewa: ia punya DUA parent sekaligus (C3m dan C3f). Inilah merge commit — penanda bahwa dua jalur histori resmi bertemu kembali di sini.",
+        "fields": [["Commit baru", "C4 (merge commit)"], ["Parent dari C4", "C3m dan C3f"], ["Histori akhir", "C1 → C2 → (C3m & C3f) → C4"]],
+        "code": ["# notes.txt", "Catatan tim", "", "Baris penting:", "Halo dari main dan feature!"]
+      }
+    ],
+    "undo": [
+      {
+        "tag": "MULAI",
+        "title": "Histori linear dengan satu commit bermasalah",
+        "desc": "Branch main punya tiga commit: C1, C2, C3. Belakangan ketahuan bahwa C3 ternyata bermasalah — misalnya tidak sengaja menghapus baris kode penting. Pertanyaannya: bagaimana cara paling aman membatalkannya?",
+        "fields": [["Histori", "C1 → C2 → C3"], ["Masalah di", "C3 (\"tidak sengaja menghapus fungsi login()\")"], ["HEAD & main", "C3"]]
+      },
+      {
+        "tag": "DUA PILIHAN",
+        "title": "Jawabannya tergantung: sudah dibagikan ke orang lain, atau belum?",
+        "desc": "Git punya dua cara utama membatalkan commit, dan pilihannya bergantung pada satu pertanyaan penting: apakah commit C3 ini sudah di-push dan dilihat/dipakai orang lain, atau masih murni di komputer sendiri?",
+        "fields": [["Jika masih lokal (belum di-push)", "gunakan git reset"], ["Jika sudah dibagikan (sudah di-push)", "gunakan git revert"]]
+      },
+      {
+        "tag": "OPSI A: RESET",
+        "title": "Skenario lokal: git reset --hard C2",
+        "desc": "Karena C3 belum pernah dibagikan ke siapa pun, aman untuk 'membelokkan waktu' — reset memindahkan penunjuk branch main mundur langsung ke C2, seolah-olah C3 tidak pernah ada. Ini MENGUBAH histori secara langsung.",
+        "fields": [["Perintah", "git reset --hard C2"], ["main & HEAD sekarang", "C2"], ["C3", "tidak lagi jadi bagian histori manapun"]]
+      },
+      {
+        "tag": "HASIL RESET",
+        "title": "Commit C3 lenyap dari histori branch",
+        "desc": "Dari sudut pandang branch main, seolah-olah C3 tidak pernah dibuat. Ini rapi dan simpel — TAPI berbahaya kalau orang lain sudah sempat menarik (pull) C3 sebelum di-reset: histori mereka jadi tidak nyambung dengan histori main yang baru.",
+        "fields": [["Histori main sekarang", "C1 → C2"], ["Risiko", "berbahaya bila C3 sudah pernah dibagikan ke orang lain"]]
+      },
+      {
+        "tag": "OPSI B: REVERT",
+        "title": "Skenario dibagikan: git revert C3 (mulai lagi dari histori awal)",
+        "desc": "Kali ini anggap C3 SUDAH di-push dan sudah ditarik oleh rekan tim lain. Menghapus C3 dari histori (seperti reset) akan mengacaukan repositori mereka. Solusinya: revert membuat COMMIT BARU yang isinya kebalikan dari perubahan C3, tanpa menghapus apa pun.",
+        "fields": [["Perintah", "git revert C3"], ["Histori sebelum", "C1 → C2 → C3"], ["Prinsip", "tambah commit baru, jangan hapus yang lama"]]
+      },
+      {
+        "tag": "HASIL REVERT",
+        "title": "Commit baru C4 menambal kerusakan yang dibuat C3",
+        "desc": "C3 tetap ada di histori — bukti bahwa perubahan itu pernah terjadi tetap terekam — tapi efeknya dibatalkan oleh C4 yang baru. Karena tidak ada commit lama yang dihapus atau diubah, semua orang yang sudah punya C3 tetap aman melanjutkan kerja dari C4.",
+        "fields": [["Commit baru", "C4 (membatalkan efek C3)"], ["Histori sekarang", "C1 → C2 → C3 → C4"], ["Aman untuk histori bersama?", "Ya"]]
+      },
+      {
+        "tag": "RINGKASAN",
+        "title": "Kapan pakai reset, kapan pakai revert",
+        "desc": "Aturan praktis yang gampang diingat: kalau commit itu masih rahasia pribadimu (belum di-push), reset boleh dipakai bebas untuk beres-beres histori. Begitu commit itu sudah dilihat orang lain, jangan pernah mengubah histori lama — selalu tambah commit baru lewat revert.",
+        "fields": [["git reset", "mengubah histori — hanya untuk commit lokal, belum dibagikan"], ["git revert", "menambah histori — aman untuk commit yang sudah dibagikan/di-push"]]
+      }
+    ],
+    "rebase": [
+      {
+        "tag": "TITIK CABANG",
+        "title": "main dan feature sama-sama sudah maju sejak C2",
+        "desc": "Sama seperti skenario branching, feature dibuat dari C2. Tapi kali ini, SETELAH itu, main juga terus mendapat commit baru dari developer lain. Kedua branch sekarang sudah punya commit masing-masing sejak titik cabang yang sama — mereka telah menyimpang (diverged).",
+        "fields": [["Histori main", "C1 → C2 → C3m"], ["Histori feature", "C1 → C2 → C3f"], ["Titik cabang bersama", "C2"]]
+      },
+      {
+        "tag": "DUA PILIHAN",
+        "title": "Menyatukan feature kembali ke main: dua cara berbeda",
+        "desc": "Karena main sudah bergerak duluan, git merge sederhana (fast-forward) tidak bisa dipakai lagi. Ada dua cara umum menyatukan feature kembali ke main, dan keduanya menghasilkan bentuk histori yang sangat berbeda.",
+        "fields": [["Opsi A", "git merge — mempertahankan bentuk percabangan apa adanya"], ["Opsi B", "git rebase — menulis ulang histori feature agar jadi lurus"]]
+      },
+      {
+        "tag": "OPSI A: MERGE",
+        "title": "git merge feature dari branch main",
+        "desc": "Git membuat commit baru, C4, yang menggabungkan kedua ujung branch (C3m dan C3f) sebagai dua parent sekaligus. Kedua jalur commit asli tetap terlihat apa adanya di grafik histori — bentuknya seperti berlian (diamond) yang bercabang lalu menyatu.",
+        "fields": [["Perintah", "git merge feature"], ["Commit baru", "C4 (merge commit, 2 parent)"], ["Bentuk histori", "bercabang lalu menyatu (non-linear)"]]
+      },
+      {
+        "tag": "OPSI B: REBASE",
+        "title": "git rebase main dari branch feature (dari kondisi awal lagi)",
+        "desc": "Kali ini, alih-alih menggabungkan, Git 'memutar ulang' commit C3f seolah-olah ia baru dibuat setelah C3m — hasilnya adalah commit baru dengan isi yang sama tapi hash berbeda, sebut saja C3f'. Commit C3f yang asli ditinggalkan.",
+        "fields": [["Perintah", "git rebase main (dijalankan dari branch feature)"], ["Commit ditulis ulang", "C3f → C3f' (hash baru, isi sama)"], ["Bentuk histori", "lurus/linear, tanpa commit gabungan"]]
+      },
+      {
+        "tag": "BANDINGKAN",
+        "title": "Isi akhir sama, bentuk histori beda total",
+        "desc": "Kalau dilihat dari isi file akhirnya, merge dan rebase menghasilkan hasil yang identik. Bedanya murni pada BENTUK grafik commit: merge meninggalkan jejak percabangan yang jujur apa adanya, rebase membuatnya terlihat seolah dikerjakan berurutan sejak awal.",
+        "fields": [["Hasil merge", "C1 → C2 → C3m → C4 ← C3f (bercabang)"], ["Hasil rebase", "C1 → C2 → C3m → C3f' (lurus)"]]
+      },
+      {
+        "tag": "PERINGATAN PENTING",
+        "title": "Jangan rebase commit yang sudah dibagikan ke orang lain",
+        "desc": "Karena rebase mengganti hash commit lama dengan yang baru, siapa pun yang sudah menarik (pull) commit versi lama akan punya histori yang 'berbeda' dari punyamu — ini bisa membingungkan dan berisiko duplikasi. Aturan aman: rebase hanya untuk commit lokal yang belum pernah di-push.",
+        "fields": [["Aman dipakai untuk", "commit lokal, belum di-push"], ["Hindari untuk", "commit yang sudah di-push & dipakai orang lain"]]
+      }
+    ]
+  }
+}

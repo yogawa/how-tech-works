@@ -1,0 +1,158 @@
+{
+  "documentTitle": "Enkripsi Asimetris: Satu Kunci Mengunci, Kunci Lain Membuka",
+  "eyebrow": "Kriptografi Kunci Publik",
+  "h1Prefix": "Satu kunci mengunci, ",
+  "h1Highlight": "kunci lain yang membuka",
+  "h1Suffix": ".",
+  "lede": "Enkripsi asimetris (kunci publik) memecahkan masalah lama dalam kriptografi: bagaimana dua pihak bisa bertukar pesan rahasia tanpa pernah bertemu untuk menyepakati satu kunci rahasia yang sama? Alih-alih satu kunci untuk semua orang, setiap pihak punya sepasang kunci — satu boleh disebar ke siapa saja, satu lagi wajib dirahasiakan selamanya. Coba dua alur di bawah ini: mengirim pesan rahasia, dan membubuhkan tanda tangan digital — perhatikan bagaimana kedua kunci itu dipakai dengan arah yang justru berkebalikan.",
+  "figCaption": "FIG. 01 — ALUR KUNCI ASIMETRIS",
+  "modeTabs": {
+    "encrypt": "🔒 Kirim Pesan Rahasia",
+    "sign": "✒️ Tanda Tangan Digital"
+  },
+  "nodes": {
+    "alice": {
+      "label": "Alice",
+      "subEncrypt": "Pengirim pesan rahasia",
+      "subSign": "Penerima &amp; pemverifikasi"
+    },
+    "bob": {
+      "label": "Bob",
+      "sub": "Pemilik sepasang kunci"
+    }
+  },
+  "keyring": {
+    "cardTag": "KEYRING BOB",
+    "publicLabel": "Kunci Publik",
+    "publicNote": "Boleh disebar ke siapa saja",
+    "privateLabel": "Kunci Privat",
+    "privateNote": "Wajib dirahasiakan selamanya",
+    "holderPublicBefore": "Baru dipegang Bob",
+    "holderPublicShared": "Dipegang Bob &amp; siapa pun yang memperolehnya (termasuk Alice)",
+    "holderPrivate": "Hanya dipegang Bob, tidak pernah dibagikan"
+  },
+  "carrierLabels": {
+    "public": "🔑 Kunci Publik",
+    "cipher": "🔒 Ciphertext",
+    "sig": "✍️ Pesan + Tanda Tangan"
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓",
+    "stepCounter": "Langkah {n} / {total}"
+  },
+  "tamperDemo": {
+    "toggleLabel": "🧪 Simulasikan: pesan diubah di tengah jalan",
+    "computedHashLabel": "Hash dari pesan yang diterima Alice",
+    "signatureHashLabel": "Hash hasil buka tanda tangan (pakai kunci publik Bob)",
+    "matchBadge": "✓ Cocok — pesan asli &amp; utuh",
+    "mismatchBadge": "✗ Tidak cocok — pesan telah diubah!",
+    "hashOriginal": "a3f9c1e0",
+    "hashTampered": "7b2e44aa",
+    "hashSignature": "a3f9c1e0"
+  },
+  "legend": {
+    "title": "Referensi cepat: alur mana pakai kunci yang mana",
+    "sub": "Aturan umum: arah pemakaian kunci pada kedua alur ini justru saling berkebalikan.",
+    "headers": ["Alur", "Aksi awal", "Aksi akhir", "Contoh dunia nyata"],
+    "rows": [
+      {
+        "flow": "Kerahasiaan (Encrypt)",
+        "startAction": "Mengunci pesan &rarr; kunci PUBLIK penerima",
+        "endAction": "Membuka pesan &rarr; kunci PRIVAT penerima",
+        "example": "HTTPS saat pertukaran kunci sesi, email terenkripsi (PGP/GPG)"
+      },
+      {
+        "flow": "Keaslian (Sign)",
+        "startAction": "Menandatangani &rarr; kunci PRIVAT pengirim",
+        "endAction": "Memverifikasi &rarr; kunci PUBLIK pengirim",
+        "example": "Tanda tangan kode software, sertifikat SSL/TLS, transaksi blockchain"
+      }
+    ]
+  },
+  "footer": "DIAGRAM INTERAKTIF — ENKRIPSI ASIMETRIS: KERAHASIAAN &amp; TANDA TANGAN DIGITAL",
+  "encryptSteps": [
+    {
+      "tag": "MULAI",
+      "title": "Bob membuat sepasang kunci",
+      "desc": "Bob menjalankan sebuah fungsi matematika satu-arah (trapdoor function) yang menghasilkan dua kunci sekaligus: kunci publik dan kunci privat. Keduanya saling berkaitan secara matematis, tapi mustahil secara komputasi untuk menghitung kunci privat hanya dari kunci publiknya.",
+      "fields": [["Contoh dasar matematika", "perkalian dua bilangan prima besar"], ["Mudah dihitung satu arah", "p × q = n"], ["Sangat sulit dibalik", "mencari p dan q hanya dari n"]]
+    },
+    {
+      "tag": "+ DIBAGIKAN",
+      "title": "Bob menyebarkan kunci publiknya",
+      "desc": "Kunci publik ini AMAN untuk disebar ke mana saja — lewat situs web, email, atau server kunci publik. Bahkan jika penyerang mendapatkan salinannya pun tidak masalah, karena kunci ini hanya bisa MENGUNCI, tidak bisa membuka.",
+      "fields": [["Yang disebar", "kunci publik Bob"], ["Yang tetap rahasia", "kunci privat Bob — tidak pernah dikirim ke mana pun"]]
+    },
+    {
+      "tag": "DITERIMA",
+      "title": "Alice mendapatkan kunci publik Bob",
+      "desc": "Sekarang Alice punya salinan kunci publik Bob. Ini bukan rahasia — siapa pun boleh memilikinya. Keamanannya tidak bergantung pada kerahasiaan kunci publik, melainkan pada kerahasiaan kunci privat yang tetap hanya dipegang Bob.",
+      "fields": [["Dipegang Alice", "kunci publik Bob (salinan)"], ["Masih hanya di Bob", "kunci privat Bob"]]
+    },
+    {
+      "tag": "DIKUNCI",
+      "title": "Alice mengunci pesannya dengan kunci publik Bob",
+      "desc": "Alice menulis pesan rahasia, lalu mengenkripsinya memakai kunci publik Bob. Begitu terkunci, pesan itu berubah menjadi teks acak (ciphertext) yang HANYA bisa dibuka oleh pasangannya — yaitu kunci privat Bob.",
+      "fields": [["Kunci yang dipakai mengunci", "kunci publik Bob"], ["Hasil", "ciphertext — tampak seperti data acak"]]
+    },
+    {
+      "tag": "TRANSMISI",
+      "title": "Ciphertext dikirim melalui internet terbuka",
+      "desc": "Pesan terkunci ini boleh lewat jalur yang tidak aman sekalipun. Jika disadap, penyerang hanya akan melihat data acak — tanpa kunci privat Bob, ciphertext ini tidak bisa dibaca sama sekali.",
+      "fields": [["Yang terlihat penyadap", "ciphertext acak, tidak bermakna"], ["Yang dibutuhkan untuk membuka", "kunci privat Bob — tidak pernah disebar"]]
+    },
+    {
+      "tag": "DIBUKA",
+      "title": "Bob membuka ciphertext dengan kunci privatnya",
+      "desc": "Hanya kunci privat Bob yang cocok dengan kunci publik yang tadi dipakai mengunci. Bob mendekripsi ciphertext dan mendapatkan kembali pesan asli, persis seperti yang ditulis Alice.",
+      "fields": [["Kunci yang dipakai membuka", "kunci privat Bob"], ["Hasil", "pesan asli, utuh kembali"]]
+    },
+    {
+      "tag": "SELESAI",
+      "title": "Kesimpulan: publik mengunci, privat membuka",
+      "desc": "Di alur kerahasiaan ini arahnya selalu begini: siapa pun bisa mengunci dengan kunci publik penerima, tapi hanya pemilik kunci privat yang cocok yang bisa membukanya. Inilah yang membuat pertukaran kunci rahasia di awal — seperti pada kriptografi simetris — tidak lagi diperlukan.",
+      "fields": [["Mengunci (encrypt)", "pakai kunci PUBLIK penerima"], ["Membuka (decrypt)", "pakai kunci PRIVAT penerima"]]
+    }
+  ],
+  "signSteps": [
+    {
+      "tag": "MULAI",
+      "title": "Bob ingin membuktikan sebuah pesan benar darinya",
+      "desc": "Bob memakai keypair yang sama seperti sebelumnya. Kali ini tujuannya bukan kerahasiaan, melainkan membuktikan keaslian: memastikan pesan benar-benar berasal darinya dan tidak diubah di tengah jalan.",
+      "fields": [["Pesan", "misalnya: \"Transfer disetujui.\""], ["Tujuan", "autentikasi &amp; integritas, bukan kerahasiaan"]]
+    },
+    {
+      "tag": "DIRINGKAS",
+      "title": "Bob membuat sidik jari (hash) dari pesannya",
+      "desc": "Fungsi hash mengubah pesan apa pun — panjang atau pendek — menjadi deretan karakter pendek dengan panjang tetap. Perubahan sekecil apa pun pada pesan akan menghasilkan hash yang sama sekali berbeda.",
+      "fields": [["Pesan asli", "\"Transfer disetujui.\""], ["Hash (contoh)", "a3f9c1e0"]]
+    },
+    {
+      "tag": "DITANDATANGANI",
+      "title": "Bob mengenkripsi hash itu dengan kunci PRIVATnya",
+      "desc": "Hasil enkripsi hash memakai kunci privat inilah yang disebut tanda tangan digital. Karena hanya Bob yang punya kunci privat itu, hanya Bob yang bisa menghasilkan tanda tangan yang valid untuk pesan ini.",
+      "fields": [["Kunci yang dipakai menandatangani", "kunci PRIVAT Bob"], ["Hasil", "tanda tangan digital, ditempel pada pesan"]]
+    },
+    {
+      "tag": "TRANSMISI",
+      "title": "Pesan + tanda tangan dikirim ke Alice",
+      "desc": "Keduanya boleh dikirim lewat jalur apa saja, bahkan yang tidak aman — pesan ini tidak perlu dirahasiakan, isinya boleh dilihat siapa saja. Yang penting keasliannya bisa diverifikasi nanti.",
+      "fields": [["Dikirim", "pesan asli (terbuka) + tanda tangan"], ["Tidak dienkripsi", "pesannya sendiri tetap terbuka/terbaca"]]
+    },
+    {
+      "tag": "DIVERIFIKASI",
+      "title": "Alice memverifikasi tanda tangan dengan kunci publik Bob",
+      "desc": "Alice menghitung ulang hash dari pesan yang ia terima, lalu memakai kunci publik Bob untuk membuka tanda tangan dan mendapatkan hash yang dibuat Bob. Jika kedua hash itu SAMA, pesan terbukti asli dan tidak berubah.",
+      "fields": [["Kunci yang dipakai memverifikasi", "kunci PUBLIK Bob"], ["Yang dibandingkan", "hash hitungan Alice vs hash dari tanda tangan"]]
+    },
+    {
+      "tag": "SELESAI",
+      "title": "Kesimpulan: privat menandatangani, publik memverifikasi",
+      "desc": "Di alur autentikasi ini arahnya kebalikan dari alur kerahasiaan: yang menandatangani memakai kunci PRIVATnya sendiri, dan siapa pun bisa memverifikasi memakai kunci PUBLIK milik penandatangan. Perhatikan: arah pemakaian kuncinya terbalik dibanding alur mengunci pesan rahasia!",
+      "fields": [["Menandatangani (sign)", "pakai kunci PRIVAT milik sendiri"], ["Memverifikasi (verify)", "pakai kunci PUBLIK milik penandatangan"]]
+    }
+  ]
+}

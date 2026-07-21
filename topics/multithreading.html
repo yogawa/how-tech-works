@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Multithreading</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-dark: #0a0a0f;
+  --bg-card: rgba(20, 20, 30, 0.6);
+  --text-main: #f0f0f5;
+  --text-muted: #8b8b9e;
+  
+  --neon-blue: #00f0ff;
+  --neon-purple: #b026ff;
+  --neon-red: #ff3366;
+  --neon-green: #00ff66;
+  --neon-gold: #ffaa00;
+
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+
+body {
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 15% 50%, rgba(176, 38, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 50%);
+  color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrap {
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Header & Controls */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 10;
+}
+.header-text { max-width: 600px; }
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(0, 240, 255, 0.1);
+  border-radius: 4px;
+}
+h1 {
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 800;
+  margin: 10px 0;
+  line-height: 1.1;
+  background: linear-gradient(90deg, #fff, var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h1 span {
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.lede {
+  font-size: 17px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+/* Language Switch */
+.lang-switch {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+.lang-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.lang-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.lang-btn.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--neon-blue);
+}
+
+/* Simulation Arena */
+.arena {
+  width: 100%;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 40px;
+  position: relative;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  overflow: hidden;
+}
+
+.arena::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+  opacity: 0.5;
+}
+
+.architecture {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  position: relative;
+}
+
+@media(max-width: 800px) {
+  .architecture { flex-direction: column; }
+}
+
+/* Threads Area */
+.threads {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+}
+.thread-lane {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+  height: 70px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+  opacity: 0.3;
+  transform: scale(0.98);
+}
+.thread-lane.active {
+  opacity: 1;
+  transform: scale(1);
+  border-color: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+}
+.thread-lane.crash {
+  border-color: rgba(255, 51, 102, 0.6);
+  box-shadow: 0 0 30px rgba(255, 51, 102, 0.2);
+  animation: shake 0.5s ease-in-out infinite;
+}
+.thread-lane.wait {
+  border-color: rgba(255, 170, 0, 0.4);
+}
+.thread-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  z-index: 2;
+  transition: color 0.3s;
+}
+.active .thread-name { color: var(--neon-blue); }
+.crash .thread-name { color: var(--neon-red); }
+.wait .thread-name { color: var(--neon-gold); }
+
+/* The Data Particles */
+.particle {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 10px #fff, 0 0 20px var(--neon-blue);
+  left: 100px;
+  opacity: 0;
+  z-index: 3;
+}
+.particle.p1 { top: 27px; }
+
+@keyframes moveRight {
+  0% { left: 80px; opacity: 0; transform: scale(0.5); }
+  10% { opacity: 1; transform: scale(1); }
+  90% { opacity: 1; transform: scale(1); }
+  100% { left: calc(100% - 30px); opacity: 0; transform: scale(0.5); }
+}
+@keyframes crashRight {
+  0% { left: 80px; opacity: 0; }
+  10% { opacity: 1; }
+  90% { left: calc(100% - 30px); opacity: 1; background: var(--neon-red); box-shadow: 0 0 20px var(--neon-red); }
+  100% { left: calc(100% - 30px); opacity: 0; transform: scale(2); }
+}
+@keyframes waiting {
+  0% { left: 80px; opacity: 0; }
+  20% { left: 150px; opacity: 1; }
+  80% { left: 150px; opacity: 1; box-shadow: 0 0 10px var(--neon-gold); background: var(--neon-gold); }
+  100% { left: calc(100% - 30px); opacity: 0; }
+}
+
+.active .particle { animation: moveRight 2.5s infinite linear; }
+.active.delay1 .particle { animation-delay: 0.5s; }
+.active.delay2 .particle { animation-delay: 1.2s; }
+.crash .particle { animation: crashRight 1s forwards cubic-bezier(1,0,1,0); }
+.wait .particle { animation: waiting 3s infinite ease-in-out; }
+
+/* Shared Resource Vault */
+.vault-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 200px;
+}
+.vault {
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(0,0,0,0.8));
+  border: 2px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 5;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+  transition: all 0.4s;
+}
+.vault.corrupted {
+  border-color: var(--neon-red);
+  box-shadow: 0 0 50px rgba(255,51,102,0.4), inset 0 0 20px rgba(255,51,102,0.3);
+  animation: pulseRed 0.5s infinite alternate;
+}
+.vault.safe {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 30px rgba(0,255,102,0.2);
+}
+
+.vault-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.vault-value {
+  font-size: 36px;
+  font-weight: 800;
+  color: #fff;
+  margin-top: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+.vault.corrupted .vault-value {
+  color: var(--neon-red);
+  text-shadow: 0 0 15px var(--neon-red);
+}
+
+/* Mutex Shield */
+.shield {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  border: 2px dashed var(--neon-gold);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: spin 10s linear infinite;
+  z-index: 4;
+}
+.shield.active {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  box-shadow: 0 0 30px rgba(255,170,0,0.1);
+}
+.lock-icon {
+  position: absolute;
+  top: -15px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-dark);
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--neon-gold);
+  color: var(--neon-gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+@keyframes pulseRed {
+  from { box-shadow: 0 0 20px rgba(255,51,102,0.4); }
+  to { box-shadow: 0 0 60px rgba(255,51,102,0.8); }
+}
+
+/* Player Controls */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+button.control-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 24px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+button.control-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-2px);
+}
+button.control-btn:disabled {
+  opacity: 0.3; cursor: not-allowed;
+}
+button.control-btn.primary {
+  background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+  border: none;
+  box-shadow: 0 5px 15px rgba(176,38,255,0.3);
+}
+button.control-btn.primary:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(0,240,255,0.4);
+}
+
+.timeline {
+  display: flex;
+  gap: 8px;
+  margin: 0 20px;
+}
+.dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  transition: all 0.3s;
+}
+.dot.done { background: var(--neon-purple); }
+.dot.now { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); transform: scale(1.3); }
+
+
+/* Story Panel */
+.story-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+.tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.tag-neutral { background: rgba(255,255,255,0.1); color: #fff; }
+.tag-multi { background: rgba(0,240,255,0.1); color: var(--neon-blue); border: 1px solid rgba(0,240,255,0.3); }
+.tag-danger { background: rgba(255,51,102,0.1); color: var(--neon-red); border: 1px solid rgba(255,51,102,0.3); }
+.tag-safe { background: rgba(0,255,102,0.1); color: var(--neon-green); border: 1px solid rgba(0,255,102,0.3); }
+
+.story-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: #fff;
+}
+.story-desc {
+  font-size: 16px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 25px;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+.data-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 15px;
+}
+.data-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.data-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--neon-blue);
+}
+
+.loading {
+  position: fixed; inset: 0;
+  background: var(--bg-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--neon-blue);
+  z-index: 100;
+  transition: opacity 0.5s;
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">INITIATING VISUALIZATION...</div>
+
+<div class="wrap" id="wrap" style="opacity:0; transition: opacity 1s;">
+  <header>
+    <div class="header-text">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
+  </header>
+
+  <div class="arena">
+    <div class="architecture">
+      <div class="threads">
+        <div class="thread-lane" id="t1">
+          <div class="thread-name">THREAD_01</div>
+          <div class="particle p1"></div>
+        </div>
+        <div class="thread-lane" id="t2">
+          <div class="thread-name">THREAD_02</div>
+          <div class="particle p1"></div>
+        </div>
+        <div class="thread-lane" id="t3">
+          <div class="thread-name">THREAD_03</div>
+          <div class="particle p1"></div>
+        </div>
+      </div>
+
+      <div class="vault-wrapper">
+        <div class="shield" id="shield">
+          <div class="lock-icon">MUTEX_LOCK</div>
+        </div>
+        <div class="vault" id="vault">
+          <div class="vault-label">SHARED DATA</div>
+          <div class="vault-value" id="vaultValue">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="control-btn primary" id="btnNext"></button>
+      <button class="control-btn" id="btnReset" style="margin-left: 20px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+
+</div>
+
+<script>
+const LANGS = ['id', 'en'];
+let currentLang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('lang') || 'en';
+let i18n = null;
+let current = 0;
+
+// Hardcoded visual states mapped to the steps
+const states = [
+  { t1: 'active', t2: '', t3: '', vault: '', val: '128', tagClass: 'tag-neutral', shield: false },
+  { t1: 'active delay1', t2: 'active', t3: 'active delay2', vault: 'safe', val: '512', tagClass: 'tag-multi', shield: false },
+  { t1: 'crash', t2: 'crash', t3: '', vault: 'corrupted', val: 'NaN', tagClass: 'tag-danger', shield: false },
+  { t1: 'active', t2: 'wait', t3: '', vault: 'safe', val: '1024', tagClass: 'tag-safe', shield: true }
+];
+
+async function loadData() {
+  const res = await fetch(`i18n/multithreading.${currentLang}.json`);
+  i18n = await res.json();
+}
+
+function updateStaticUI() {
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + `<span>${i18n.h1Highlight}</span>` + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+  
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnNext').innerHTML = i18n.controls.next;
+  document.getElementById('btnReset').innerHTML = i18n.controls.reset;
+
+  const ls = document.getElementById('langSwitch');
+  ls.innerHTML = '';
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (l === currentLang ? ' active' : '');
+    b.innerText = l.toUpperCase();
+    b.onclick = () => setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+function renderStep() {
+  const st = states[current];
+  const data = i18n.steps[current];
+
+  // Update Visuals
+  document.getElementById('t1').className = 'thread-lane ' + st.t1;
+  document.getElementById('t2').className = 'thread-lane ' + st.t2;
+  document.getElementById('t3').className = 'thread-lane ' + st.t3;
+  
+  document.getElementById('vault').className = 'vault ' + st.vault;
+  document.getElementById('vaultValue').textContent = st.val;
+  document.getElementById('shield').className = 'shield ' + (st.shield ? 'active' : '');
+
+  // Update Text
+  const t = document.getElementById('tag');
+  t.textContent = data.tag;
+  t.className = 'tag ' + st.tagClass;
+  
+  document.getElementById('storyTitle').textContent = data.title;
+  document.getElementById('storyDesc').textContent = data.desc;
+
+  const grid = document.getElementById('dataGrid');
+  grid.innerHTML = '';
+  data.fields.forEach(([lbl, val]) => {
+    grid.innerHTML += `<div class="data-card"><div class="data-label">${lbl}</div><div class="data-val">${val}</div></div>`;
+  });
+
+  // Controls & Dots
+  const track = document.getElementById('stepTrack');
+  track.innerHTML = '';
+  states.forEach((_, i) => {
+    let cls = 'dot';
+    if(i < current) cls += ' done';
+    if(i === current) cls += ' now';
+    track.innerHTML += `<div class="${cls}"></div>`;
+  });
+
+  document.getElementById('btnPrev').disabled = (current === 0);
+  document.getElementById('btnNext').innerHTML = (current === states.length - 1) ? i18n.controls.done : i18n.controls.next;
+}
+
+document.getElementById('btnNext').onclick = () => { if(current < states.length - 1) { current++; renderStep(); } };
+document.getElementById('btnPrev').onclick = () => { if(current > 0) { current--; renderStep(); } };
+document.getElementById('btnReset').onclick = () => { current = 0; renderStep(); };
+
+async function setLang(l) {
+  if (l === currentLang) return;
+  currentLang = l;
+  localStorage.setItem('lang', l);
+  const u = new URL(window.location);
+  u.searchParams.set('lang', l);
+  history.replaceState(null, '', u);
+  
+  await loadData();
+  updateStaticUI();
+  renderStep();
+  
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: l }, '*');
+  }
+}
+
+async function init() {
+  await loadData();
+  updateStaticUI();
+  renderStep();
+  
+  document.getElementById('loadingNote').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loadingNote').style.display = 'none';
+    document.getElementById('wrap').style.opacity = '1';
+  }, 500);
+}
+
+init();
+</script>
+</body>
+</html>

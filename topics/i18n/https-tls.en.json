@@ -1,0 +1,195 @@
+{
+  "documentTitle": "HTTPS/TLS: What's Behind the Little Lock Icon",
+  "eyebrow": "Transport Layer Security",
+  "h1Prefix": "That little lock icon in the address bar ",
+  "h1Highlight": "hides a lot more than it looks",
+  "h1Suffix": ".",
+  "lede": "HTTPS isn't just 'HTTP + a padlock'. Underneath it runs the TLS (Transport Layer Security) protocol, which negotiates a whole sequence of steps before a single byte of data is sent: both sides introduce themselves, the server proves its identity with a certificate, and then both agree on a shared secret key without ever sending that key over the network. Try the four scenarios below — the full handshake flow, how a browser decides to trust a certificate, why TLS 1.3 is faster than TLS 1.2, and what an attacker actually sees when a connection isn't encrypted.",
+  "cases": {
+    "handshake": "🤝 TLS Handshake",
+    "trust": "📜 Certificate Chain",
+    "versions": "⚡ TLS 1.2 vs 1.3",
+    "mitm": "🕵️ HTTP vs HTTPS"
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓"
+  },
+  "labels": {
+    "totalRoundTripsSlow": "2 round-trips total",
+    "totalRoundTripsFast": "1 round-trip total",
+    "zeroRtt": "0 round-trips (0-RTT)",
+    "returnVisitLane": "⚡ TLS 1.3 — return visit",
+    "injectedScript": "✎ injected script",
+    "encryptedLabel": "🔒 encrypted",
+    "unreadableLabel": "🔒 unreadable"
+  },
+  "steps": {
+    "handshake": [
+      {
+        "tag": "START",
+        "title": "The browser wants to open https://example.com",
+        "desc": "Before a single byte of the actual site can be shown, the browser (client) and the server first need to agree on how to encrypt their entire conversation. At this point there's no secure channel at all — everything that follows is called the TLS handshake.",
+        "fields": [["Client", "The user's browser"], ["Server", "example.com"], ["Status", "No secure channel yet"]]
+      },
+      {
+        "tag": "CLIENT HELLO",
+        "title": "The client sends a ClientHello",
+        "desc": "The first message always comes from the client. It's not secret data — just a proposal: the highest TLS version it supports, a list of cipher suites (encryption algorithm combos) it can use, and a random number (client random) that will later help build the session key.",
+        "fields": [["Sent", "ClientHello"], ["Contains", "TLS version, cipher suite list, client random"], ["Encrypted?", "Not yet — this is all still plaintext"]]
+      },
+      {
+        "tag": "SERVER HELLO + CERTIFICATE",
+        "title": "The server replies with a ServerHello and its certificate",
+        "desc": "The server picks one cipher suite from the client's list, sends its own random number (server random), and — most importantly — sends its digital certificate: a document proving 'I really am example.com' while also carrying the server's public key.",
+        "fields": [["Sent", "ServerHello + Certificate + server random"], ["Cipher suite chosen", "by the server, from the client's list"], ["Contains a public key", "the server's own, inside the certificate"]]
+      },
+      {
+        "tag": "VERIFY CERTIFICATE",
+        "title": "The client checks whether the server's certificate is legitimate",
+        "desc": "Before going any further, the browser verifies the certificate is genuine: the domain name matches, it hasn't expired, and it was signed by a trusted authority (see the 'Certificate Chain' scenario for the full details). If any check fails, the browser stops the connection right there with a warning.",
+        "fields": [["Checked", "Domain name, validity period, CA signature"], ["If it fails", "Connection is stopped, a security warning appears"]]
+      },
+      {
+        "tag": "KEY EXCHANGE",
+        "title": "Client & server exchange material for a session key",
+        "desc": "Using the server's public key (and a modern key-exchange scheme like ECDHE), the client and server each send the other 'raw material' for a key. The key itself is NEVER sent directly over the network — only material each side uses to compute it independently.",
+        "fields": [["Common method", "ECDHE (Ephemeral Diffie-Hellman)"], ["What's sent", "key-exchange material, not the key itself"]]
+      },
+      {
+        "tag": "DERIVE SESSION KEY",
+        "title": "Both sides compute an identical session key — separately",
+        "desc": "From the client random, server random, and the key-exchange result, the client and server each independently run a key derivation function. The result: both end up with the exact same symmetric session key, without that key ever having crossed the network at all.",
+        "fields": [["Computed by", "the client and server, each on their own"], ["Result", "an identical symmetric session key on both sides"]]
+      },
+      {
+        "tag": "FINISHED",
+        "title": "Both sides send each other an encrypted Finished message",
+        "desc": "As proof the session key was agreed on correctly, the client and server each send a 'Finished' message — the very first message encrypted with the session key that was just derived. If either side can't decrypt it, something went wrong and the handshake fails.",
+        "fields": [["Message", "Finished (from both sides)"], ["Encrypted with", "the freshly derived session key"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "A secure channel is up — application data starts flowing",
+        "desc": "The handshake is complete. From this point on, every HTTP request and response between browser and server is encrypted with that symmetric session key — far faster than asymmetric encryption, whose job is already done once this session key exists.",
+        "fields": [["Status", "TLS channel active"], ["Encryption from now on", "symmetric, using the session key"]]
+      }
+    ],
+    "trust": [
+      {
+        "tag": "START",
+        "title": "The browser just received a certificate from example.com",
+        "desc": "A certificate by itself is just a claim — 'this is example.com's public key'. That claim is worthless without a way to prove it's true. That's exactly what the chain of trust is for.",
+        "fields": [["Received", "A certificate for example.com"], ["Its claim", "\"This is example.com's public key\""]]
+      },
+      {
+        "tag": "CHECK IDENTITY",
+        "title": "Does the name on the certificate match the site being visited?",
+        "desc": "The most basic check: the browser compares the domain name in the address bar with the domain name written on the certificate. If you're visiting example.com but the certificate was issued for a different domain, the browser gets suspicious immediately.",
+        "fields": [["Domain in address bar", "example.com"], ["Domain on certificate", "example.com — matches"]]
+      },
+      {
+        "tag": "CHECK THE SIGNATURE",
+        "title": "example.com's certificate is signed by an Intermediate CA",
+        "desc": "A server certificate doesn't stand on its own — it's digitally signed by an intermediate Certificate Authority (Intermediate CA), using the exact same mechanism as a digital signature: the browser verifies that signature using the Intermediate CA's public key.",
+        "fields": [["Signed by", "an Intermediate CA"], ["Verified using", "the Intermediate CA's public key"]]
+      },
+      {
+        "tag": "CLIMB ONE MORE LEVEL",
+        "title": "But who trusts the Intermediate CA?",
+        "desc": "The Intermediate CA's own certificate is, in turn, signed by someone further up: a Root CA. The browser repeats the same process — verifying the signature on the Intermediate CA's certificate using the Root CA's public key. In practice this chain can go more than one level deep.",
+        "fields": [["Intermediate CA's certificate", "signed by a Root CA"], ["Verified using", "the Root CA's public key"]]
+      },
+      {
+        "tag": "TRUST ANCHOR",
+        "title": "The Root CA is simply trusted — no further proof needed",
+        "desc": "A Root CA's certificate is indeed self-signed — but that's not a problem, because a Root CA doesn't need to be 'proven' through a chain. Its public key was already built into the operating system or browser from the start, as part of a list of parties trusted outright (the trust store).",
+        "fields": [["Root CA's certificate", "self-signed"], ["Why it's trusted", "already built into the OS/browser trust store"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "The full chain checks out — the padlock appears in the address bar",
+        "desc": "Server Certificate → Intermediate CA → Root CA — every signature in this chain is valid, all the way up to a point the browser trusts without needing further proof. If any single link breaks (expired, wrong domain, unknown issuer), the browser rejects the connection and shows a warning instead of a padlock.",
+        "fields": [["Chain", "Server Cert → Intermediate CA → Root CA"], ["Result", "Trusted — padlock shown"]]
+      }
+    ],
+    "versions": [
+      {
+        "tag": "START",
+        "title": "The same starting point: the client wants to begin a handshake",
+        "desc": "Both protocol versions have the exact same end goal — a secure, encrypted channel. The difference lies in how many times data has to travel back and forth (round-trips) across the network before real application data is allowed to flow. Every round-trip adds latency, especially over long-distance connections.",
+        "fields": [["End goal", "the same — an encrypted channel"], ["What differs", "how many round-trips before application data can be sent"]]
+      },
+      {
+        "tag": "TLS 1.2 — ROUND-TRIP 1",
+        "title": "TLS 1.2: ClientHello, then waiting for the server's full reply",
+        "desc": "In TLS 1.2, the client sends a ClientHello and then has to wait. The server replies with a bundle of messages at once (ServerHello, certificate, key-exchange parameters) before the client can respond with anything. That's just round-trip number one.",
+        "fields": [["Client sends", "ClientHello"], ["Server replies with", "ServerHello + Certificate + key parameters"], ["Round-trip", "1"]]
+      },
+      {
+        "tag": "TLS 1.2 — ROUND-TRIP 2",
+        "title": "TLS 1.2: only after the second round-trip can application data flow",
+        "desc": "The client sends its own key material followed by a Finished message, and MUST wait for the server's own Finished reply before it can be sure the channel is truly safe to use. Total: two full round-trips across the network before the very first byte of site data (HTML, images, etc.) can be sent.",
+        "fields": [["Total round-trips", "2"], ["Application data allowed", "only after round-trip 2 completes"]]
+      },
+      {
+        "tag": "TLS 1.3 — A BOLDER GUESS",
+        "title": "TLS 1.3: the client guesses ahead and sends its key material upfront",
+        "desc": "TLS 1.3 cuts the small talk: in that same ClientHello, the client immediately includes a guessed key share for the most commonly used cryptographic group — without waiting to hear which method the server picks first.",
+        "fields": [["Client sends", "ClientHello + a guessed key share, at once"], ["Assumption", "the server likely supports the same group"]]
+      },
+      {
+        "tag": "TLS 1.3 — DONE IN 1 ROUND-TRIP",
+        "title": "The server replies with everything at once — ready to send data too",
+        "desc": "Because the client's guess is usually right, the server can immediately reply with ServerHello, its certificate, its own key material, AND a Finished message all in one response. The client only needs to send back its own Finished — a total of just ONE round-trip before application data can flow.",
+        "fields": [["Total round-trips", "1"], ["Faster than TLS 1.2 by", "roughly half the handshake time"]]
+      },
+      {
+        "tag": "BONUS: 0-RTT",
+        "title": "For a return visit, TLS 1.3 can even manage 0 round-trips",
+        "desc": "If the client has connected to this exact server before, TLS 1.3 lets the client send encrypted application data right alongside its very first ClientHello — called 0-RTT. The trade-off: 0-RTT data is somewhat more vulnerable to replay attacks, so it's typically only used for requests that are safe to repeat (idempotent), not things like a payment transaction.",
+        "fields": [["Called", "0-RTT (session resumption)"], ["Requires", "having connected to this same server before"], ["Trade-off", "replay-attack risk on 0-RTT data"]]
+      }
+    ],
+    "mitm": [
+      {
+        "tag": "START",
+        "title": "A client logs into a site over plain HTTP (no TLS at all)",
+        "desc": "Imagine a login form submitted over http://, not https:// — there's no encryption at all wrapping this data anywhere along its journey across the network, say, over public café WiFi.",
+        "fields": [["Protocol", "HTTP (no TLS)"], ["Data being sent", "a login form (username & password)"]]
+      },
+      {
+        "tag": "AN ATTACKER SLIPS IN",
+        "title": "Someone positions themselves between the client and the server",
+        "desc": "On that same network (say, unsecured public WiFi), an attacker positions themselves between the client and the server — this is called a man-in-the-middle (MITM). All of the client's traffic physically/logically passes through the attacker before it ever reaches the server.",
+        "fields": [["Attacker's position", "between the client and the server"], ["Common scenario", "unsecured public WiFi"]]
+      },
+      {
+        "tag": "READ IN PLAIN SIGHT",
+        "title": "Over HTTP: the attacker reads the username & password as-is",
+        "desc": "Since there's no encryption whatsoever, the attacker simply 'sniffs' the passing packets and reads their contents directly as plain text — including the username and password the user just typed into the login form.",
+        "fields": [["What the attacker sees", "username & password, exactly as typed"], ["Needs to decrypt anything?", "No — the data was never encrypted to begin with"]]
+      },
+      {
+        "tag": "CAN EVEN BE ALTERED",
+        "title": "The attacker can also inject or modify the page content",
+        "desc": "Because there's no mechanism to detect tampering, the attacker isn't limited to reading — they can modify traffic in transit, for example injecting a malicious script into the HTML page before it reaches the victim's browser, with the victim none the wiser.",
+        "fields": [["Extra capability", "modifying/injecting content in transit"], ["Detected by the client?", "No detection mechanism exists in plain HTTP"]]
+      },
+      {
+        "tag": "NOW WITH HTTPS",
+        "title": "Same attacker, same position — but now the traffic is wrapped in TLS",
+        "desc": "Repeat the exact same scenario, but this time the client connects over https://. The attacker can still sit in the very same spot on the network — TLS doesn't evict them — but everything passing through is now random-looking ciphertext they can't read without the session key.",
+        "fields": [["Attacker's position", "still the same — in the middle"], ["What's visible now", "random encrypted data, not meaningful text"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "HTTPS doesn't remove the attacker — it makes their position useless",
+        "desc": "This is the whole point of TLS: it doesn't stop someone from placing themselves on your network path. What it does prevent is two things — the attacker can't READ the data's contents (confidentiality), and can't ALTER it without being caught (integrity), thanks to the Finished message and per-packet integrity checks.",
+        "fields": [["Confidentiality", "the attacker can't read the data's contents"], ["Integrity", "any tampering is detected & the connection is rejected"]]
+      }
+    ]
+  }
+}

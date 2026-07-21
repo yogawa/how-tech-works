@@ -1,0 +1,81 @@
+{
+  "documentTitle": "Docker vs. Virtual Machines",
+  "eyebrow": "Systems & Architecture",
+  "h1Prefix": "Why containers are ",
+  "h1Highlight": "so incredibly lightweight",
+  "h1Suffix": ".",
+  "lede": "For years, if you wanted to run an isolated application, you used a Virtual Machine (VM). But VMs require running a complete, heavy operating system for every single app. Docker (Containers) changed everything by sharing the host OS, making them start instantly and use a fraction of the resources. Let's build the architecture stack to see why.",
+  "figCaption": "FIG. 02 — ARCHITECTURE COMPARISON",
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart",
+    "done": "Done ✓",
+    "stepCounter": "Step {n} / {total}"
+  },
+  "legend": {
+    "title": "Quick reference: Stack components",
+    "sub": "Understanding the layers of isolation.",
+    "headers": ["Layer", "Description"],
+    "rows": [
+      {
+        "layer": "Infrastructure",
+        "dataName": "The physical server or cloud hardware (CPU, RAM, Disk)."
+      },
+      {
+        "layer": "Host OS",
+        "dataName": "The main operating system running directly on the hardware."
+      },
+      {
+        "layer": "Hypervisor",
+        "dataName": "Heavy software (like VMware) that splits hardware into virtual chunks."
+      },
+      {
+        "layer": "Docker Engine",
+        "dataName": "A lightweight daemon that manages containers using OS-level virtualization."
+      },
+      {
+        "layer": "Guest OS",
+        "dataName": "A full, heavy operating system (e.g. Ubuntu) installed inside a VM."
+      }
+    ]
+  },
+  "footer": "INTERACTIVE DIAGRAM — VIRTUAL MACHINES VS CONTAINERS",
+  "steps": [
+    {
+      "tag": "START",
+      "title": "The Foundation: Hardware & Host OS",
+      "desc": "Both VMs and Containers start the same way: you have physical hardware (Infrastructure) running a main Operating System (Host OS).",
+      "fields": [["Weight", "Base System"], ["Isolation", "None yet"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "LAYER ADDED",
+      "title": "Hypervisor vs. Docker Engine",
+      "desc": "To run VMs, you install a Hypervisor, which virtualizes the physical hardware. For containers, you install the Docker Engine, which simply interfaces with the existing Host OS.",
+      "fields": [["VM Layer", "Hypervisor (Heavy)"], ["Docker Layer", "Docker Engine (Lightweight)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "ISOLATION",
+      "title": "The VM Penalty: The Guest OS",
+      "desc": "To isolate an app in a VM, you MUST install a complete 'Guest OS' (like Windows or Linux). This consumes gigabytes of storage and gigabytes of RAM before your app even starts. Docker skips this entirely by sharing the Host OS kernel.",
+      "fields": [["VM OS Overhead", "~1GB - 20GB per app"], ["Docker OS Overhead", "0GB (Shares Host OS)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "APP DEPLOYMENT",
+      "title": "Bins/Libs & The Application",
+      "desc": "Finally, the application and its dependencies (Bins/Libs) are loaded. A VM replicates the heavy Guest OS for every new app. Docker only packages the tiny dependencies with the app, keeping the container footprint minimal.",
+      "fields": [["VM Total Size", "Gigabytes"], ["Docker Total Size", "Megabytes"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "PERFORMANCE",
+      "title": "Boot Time & Efficiency",
+      "desc": "Because a VM has to boot an entire operating system from scratch, it takes minutes to start. A Docker container doesn't boot an OS; it just starts a process, which takes milliseconds.",
+      "fields": [["VM Boot Time", "Minutes"], ["Docker Boot Time", "Milliseconds"]],
+      "sizeUnit": null
+    }
+  ]
+}

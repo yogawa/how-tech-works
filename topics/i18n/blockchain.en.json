@@ -1,0 +1,89 @@
+{
+  "documentTitle": "Blockchain & Consensus",
+  "eyebrow": "Security & Cryptography",
+  "h1Prefix": "How to trust data ",
+  "h1Highlight": "without a central authority",
+  "h1Suffix": ".",
+  "lede": "A blockchain is just a database that is shared across a network of computers. But instead of trusting a single company (like a bank) to keep the records safe, the network uses cryptography and consensus rules to make the data virtually impossible to change or hack.",
+  "figCaption": "FIG. 04 — BLOCKCHAIN SCENARIOS",
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart",
+    "done": "Done ✓",
+    "stepCounter": "Step {n} / {total}"
+  },
+  "cases": {
+    "case1": "Normal Transaction",
+    "case2": "Data Tampering",
+    "case3": "P2P Consensus"
+  },
+  "steps": {
+    "case1": [
+      {
+        "tag": "INIT",
+        "title": "The Genesis Block",
+        "desc": "Every blockchain starts with a Genesis Block (Block 0). It has some data and a unique cryptographic Hash (its digital fingerprint). Because it's the first block, its 'Previous Hash' is just 0000.",
+        "fields": [["Action", "Genesis block created"]]
+      },
+      {
+        "tag": "NEW TX",
+        "title": "A New Transaction Arrives",
+        "desc": "Someone wants to send money. The transaction is grouped into Block 1. But before it can be added to the chain, it must be 'mined'.",
+        "fields": [["Data", "Alice pays Bob $50"]]
+      },
+      {
+        "tag": "MINING",
+        "title": "Mining (Proof of Work)",
+        "desc": "Miners compete to find a special number (Nonce) that, when combined with the block's data, produces a Hash that starts with a certain number of zeroes. This takes immense computing power.",
+        "fields": [["Status", "Calculating Nonce..."]]
+      },
+      {
+        "tag": "ADDED",
+        "title": "Block Chained",
+        "desc": "A miner finds the correct Nonce! Block 1 is added. Crucially, Block 1 includes the Hash of Block 0. This 'link' is what makes it a chain.",
+        "fields": [["Result", "Block 1 Secured"]]
+      }
+    ],
+    "case2": [
+      {
+        "tag": "STABLE",
+        "title": "A Healthy Chain",
+        "desc": "Here we have a perfectly healthy chain of 3 blocks. Notice how Block 2's 'Previous Hash' exactly matches Block 1's 'Hash'. Everything is mathematically linked.",
+        "fields": [["Status", "Chain Valid"]]
+      },
+      {
+        "tag": "TAMPER",
+        "title": "The Hack Attempt",
+        "desc": "A hacker tries to change the data in Block 1 (e.g., changing '$10' to '$1000'). Press the 'TAMPER' button on Block 1 to simulate the attack.",
+        "fields": [["Action", "Waiting for tamper..."]]
+      },
+      {
+        "tag": "BROKEN",
+        "title": "The Chain Breaks",
+        "desc": "Because the data in Block 1 changed, its Hash completely changed. Now, Block 2's 'Previous Hash' no longer matches Block 1. Block 2 and Block 3 are instantly invalidated (red). To get away with this, the hacker would have to re-mine Block 1, 2, and 3 before anyone else adds a new block—which is practically impossible.",
+        "fields": [["Status", "Chain Invalidated!"]]
+      }
+    ],
+    "case3": [
+      {
+        "tag": "SYNCED",
+        "title": "Nodes in Sync",
+        "desc": "A blockchain is a Peer-to-Peer (P2P) network. Here, Node A, Node B, and Node C all have the exact same copy of the blockchain.",
+        "fields": [["Network Status", "Consensus Reached"]]
+      },
+      {
+        "tag": "FORK",
+        "title": "A Temporary Fork",
+        "desc": "Sometimes, two miners solve a block at the exact same time! Node A receives Block X, but Node C receives Block Y. The network is temporarily split (a Fork).",
+        "fields": [["Node A", "Mining on Block X"], ["Node C", "Mining on Block Y"]]
+      },
+      {
+        "tag": "RESOLVED",
+        "title": "The Longest Chain Wins",
+        "desc": "The tie is broken when the NEXT block is found. A miner finds Block Z and attaches it to Node A's chain. The rule of blockchain is 'The Longest Chain is the Truth'. Node C sees Node A's chain is longer, drops Block Y, and copies Node A's chain to regain consensus.",
+        "fields": [["Winner", "Node A's Chain (Longest)"]]
+      }
+    ]
+  }
+}

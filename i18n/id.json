@@ -1,0 +1,66 @@
+{
+  "ui": {
+    "brandTitle": "Cara Kerja<br>Teknologi",
+    "brandSub": "Kumpulan visualisasi interaktif yang membongkar cara kerja teknologi, langkah demi langkah, untuk pemula.",
+    "searchPlaceholder": "Cari topik...",
+    "sidebarToggleAria": "Buka daftar topik",
+    "emptyTitle": "Pilih topik di sebelah kiri",
+    "emptyDesc": "Setiap topik adalah halaman visualisasi interaktif yang berdiri sendiri — klik salah satu di sidebar untuk mulai belajar.",
+    "aboutLink": "Tentang project ini &rarr;",
+    "noResults": "Tidak ada topik yang cocok."
+  },
+  "categories": {
+    "network": "Jaringan & Internet",
+    "security": "Keamanan",
+    "systems": "Sistem & OS",
+    "tools": "Version Control",
+    "architecture": "Arsitektur Perangkat Lunak",
+    "ai": "AI & Pembelajaran Mesin"
+  },
+  "topics": {
+    "tcpIpLayers": {
+      "title": "Perjalanan Paket: TCP/IP dari Titik ke Titik",
+      "desc": "Bagaimana data dibungkus (encapsulation) dan dibongkar (decapsulation) saat berpindah dari satu host ke host lain."
+    },
+    "dns": {
+      "title": "DNS: Buku Telepon Internet",
+      "desc": "Bagaimana browser Anda menerjemahkan nama domain yang mudah dibaca menjadi alamat IP untuk mesin."
+    },
+    "asymmetricEncryption": {
+      "title": "Enkripsi Asimetris: Kunci Publik & Privat",
+      "desc": "Kenapa satu kunci untuk mengunci dan kunci lain untuk membuka bisa menyelesaikan masalah kerahasiaan sekaligus tanda tangan digital."
+    },
+    "blockchain": {
+      "title": "Blockchain & Konsensus",
+      "desc": "Bagaimana rantai blok terdesentralisasi mengamankan data menggunakan hash kriptografi dan konsensus jaringan."
+    },
+    "httpsTls": {
+      "title": "HTTPS/TLS: Handshake, Sertifikat & Enkripsi",
+      "desc": "Empat skenario: alur TLS handshake lengkap, rantai kepercayaan sertifikat, TLS 1.2 vs 1.3, dan simulasi serangan man-in-the-middle."
+    },
+    "eventDrivenArchitecture": {
+      "title": "Event-Driven Architecture: Pub/Sub, Queue & Ketahanan",
+      "desc": "Empat skenario: pola publish/subscribe dasar, antrean event untuk pemrosesan async, koreografi vs orkestrasi, dan mengapa arsitektur ini tahan terhadap kegagalan sebagian."
+    },
+    "multithreading": {
+      "title": "Multithreading: Menjalankan Tugas Bersamaan",
+      "desc": "Bagaimana komputer membagi pekerjaan ke dalam beberapa thread, dan mencegah masalah saat mereka berbagi data."
+    },
+    "dockerVsVm": {
+      "title": "Docker vs. Virtual Machines",
+      "desc": "Perbandingan visual bagaimana kontainer (container) menghilangkan beban berat Guest OS yang ada pada VM tradisional."
+    },
+    "aotVsJit": {
+      "title": "AOT vs JIT: Kapan Kode Dikompilasi?",
+      "desc": "Empat skenario: alur kompilasi AOT, alur kompilasi JIT, dampaknya pada startup & warm-up, dan optimisasi adaptif yang bisa membuat JIT lebih cepat dari AOT."
+    },
+    "git": {
+      "title": "Git: Commit, Branch, Merge, dan Konflik",
+      "desc": "Lima skenario nyata: alur dasar commit, branching & merging, konflik merge, reset vs revert, dan rebase vs merge."
+    },
+    "llm": {
+      "title": "LLM: Cara Kerja Large Language Model",
+      "desc": "Bagaimana model bahasa besar memproses prompt dari teks mentah menjadi respons — tokenisasi, embedding, attention, dan generasi token."
+    }
+  }
+}

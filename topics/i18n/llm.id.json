@@ -1,0 +1,80 @@
+{
+  "documentTitle": "LLM: Cara Kerja Large Language Model",
+  "eyebrow": "AI & Pembelajaran Mesin",
+  "h1Prefix": "Bagaimana LLM ",
+  "h1Highlight": "memproses bahasa",
+  "h1Suffix": ".",
+  "lede": "Large Language Model (LLM) seperti GPT dan Claude belajar memahami dan menghasilkan teks dengan memproses miliaran kata. Mari kita telusuri perjalanan sebuah prompt dari teks mentah menjadi respons yang dihasilkan model — langkah demi langkah.",
+  "pipelineLabel": "PIPELINE INFERENSI LLM",
+  "flowNodes": {
+    "input": "Input",
+    "tokenize": "Tokenisasi",
+    "embed": "Embedding",
+    "attention": "Attention",
+    "output": "Output"
+  },
+  "flowSub": {
+    "input": "Teks prompt",
+    "tokenize": "Pecah jadi token",
+    "embed": "Vektor numerik",
+    "attention": "Relasi antar token",
+    "output": "Token prediksi"
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Selanjutnya &rarr;",
+    "reset": "Ulangi Dari Awal",
+    "done": "Selesai ✓"
+  },
+  "tokenExample": [
+    {"text": "Apa", "id": "tok_1387"},
+    {"text": "itu", "id": "tok_592"},
+    {"text": "LLM", "id": "tok_4821"},
+    {"text": "?", "id": "tok_30"}
+  ],
+  "vectorExample": [
+    {"label": "Apa", "height": 65},
+    {"label": "itu", "height": 40},
+    {"label": "LLM", "height": 85},
+    {"label": "?", "height": 30}
+  ],
+  "attentionNote": "Model memperhatikan hubungan antar token:",
+  "attentionPairs": [
+    {"pair": "Apa → itu", "meaning": "Kata tanya merujuk ke subjek"},
+    {"pair": "itu → LLM", "meaning": "Subjek menjelaskan topik"},
+    {"pair": "LLM → ?", "meaning": "Tanda tanya menentukan jenis respons"}
+  ],
+  "predTokens": ["LLM", "adalah", "singkatan", "dari", "Large", "Language", "Model"],
+  "steps": [
+    {
+      "tag": "MASUKAN",
+      "title": "Pengguna mengetik prompt",
+      "desc": "Anda mengetik sebuah pertanyaan atau perintah ke dalam chatbot. Teks mentah ini adalah titik awal — model belum bisa memahami kata-kata secara langsung, ia memerlukan representasi numerik terlebih dahulu.",
+      "fields": [["Prompt", "Apa itu LLM?"], ["Panjang", "11 karakter"], ["Bahasa", "Indonesia"]]
+    },
+    {
+      "tag": "LANGKAH 1",
+      "title": "Tokenisasi: Memecah teks menjadi token",
+      "desc": "Teks dipecah menjadi potongan-potongan kecil yang disebut 'token'. Setiap token merepresentasikan satu kata, sub-kata, atau karakter. Model memiliki vocabulary tetap — setiap token yang dikenali akan dicocokkan dengan nomor unik (token ID). Kata yang tidak dikenal akan dipecah lebih kecil.",
+      "fields": [["Input", "Apa itu LLM?"], ["Jumlah Token", "4 token"], ["Metode", "BPE (Byte-Pair Encoding)"]]
+    },
+    {
+      "tag": "LANGKAH 2",
+      "title": "Embedding: Mengubah token menjadi vektor",
+      "desc": "Setiap token ID dikonversi menjadi vektor numerik berdimensi tinggi (misalnya 4096 dimensi). Vektor ini menangkap makna semantik dari token — kata dengan makna serupa akan memiliki vektor yang dekat satu sama lain dalam ruang vektor.",
+      "fields": [["Dimensi Vektor", "4096"], ["Ruang Memori", "~16 KB per token"], ["Metode", "Lookup Table + Positional Encoding"]]
+    },
+    {
+      "tag": "LANGKAH 3",
+      "title": "Self-Attention: Memahami hubungan antar token",
+      "desc": "Inilah inti dari arsitektur Transformer. Setiap token 'memperhatikan' token lain untuk memahami konteks. Misalnya, token 'itu' memperhatikan 'LLM' untuk memahami ke mana 'itu' merujuk. Mekanisme Query-Key-Value menghitung skor relevansi antar semua pasangan token secara paralel.",
+      "fields": [["Mekanisme", "Scaled Dot-Product Attention"], ["Head", "32 attention heads"], ["Kompleksitas", "O(n²) terhadap jumlah token"]]
+    },
+    {
+      "tag": "LANGKAH 4",
+      "title": "Dekoder: Menghasilkan token prediksi",
+      "desc": "Setelah melalui banyak layer Transformer, model menghasilkan distribusi probabilitas atas seluruh vocabulary. Token dengan probabilitas tertinggi (atau yang dipilih berdasarkan strategi sampling) menjadi kata berikutnya dalam respons. Proses ini diulang token demi token hingga respons selesai.",
+      "fields": [["Output", "LLM adalah singkatan dari Large Language Model"], ["Token dihasilkan", "7 token"], ["Strategi", "Greedy / Top-p Sampling"]]
+    }
+  ]
+}

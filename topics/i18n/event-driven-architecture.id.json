@@ -1,0 +1,174 @@
+{
+  "documentTitle": "Event-Driven Architecture: Bereaksi Terhadap Kejadian, Bukan Perintah",
+  "eyebrow": "Arsitektur Perangkat Lunak",
+  "h1Prefix": "Service yang tidak saling memanggil langsung, ",
+  "h1Highlight": "tapi tetap bisa bekerja sama",
+  "h1Suffix": ".",
+  "lede": "Event-Driven Architecture (EDA) membalik cara service saling berkomunikasi: alih-alih satu service memanggil service lain secara langsung dan menunggu jawabannya, sebuah service cukup mengumumkan 'sesuatu telah terjadi' (event) — dan siapa pun yang berkepentingan bisa bereaksi sendiri, kapan pun siap, tanpa yang mengumumkan tadi perlu tahu siapa saja yang mendengarkan. Coba empat skenario di bawah ini — dari pola publish/subscribe dasar, bagaimana antrean event menahan lonjakan beban, dua cara mengoordinasikan alur kerja lintas service, sampai kenapa arsitektur ini jauh lebih tahan banting saat salah satu bagian sedang bermasalah.",
+  "cases": {
+    "pubsub": "📡 Pub/Sub Dasar",
+    "queue": "📥 Event Queue",
+    "choreography": "🎭 Koreografi vs Orkestrasi",
+    "resilience": "🛡️ Sync vs Event-Driven"
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓"
+  },
+  "steps": {
+    "pubsub": [
+      {
+        "tag": "MULAI",
+        "title": "OrderService bekerja sendirian — belum ada yang mendengarkan",
+        "desc": "OrderService baru saja selesai memproses sebuah pesanan. Di dunia tanpa event, kalau ada layanan lain yang perlu tahu (kirim email, update stok, catat statistik), OrderService harus memanggil satu per satu layanan itu secara langsung — dan tahu persis siapa saja yang harus dipanggil.",
+        "fields": [["Service", "OrderService"], ["Status", "Belum ada mekanisme pemberitahuan"]]
+      },
+      {
+        "tag": "SUBSCRIBER MENDAFTAR",
+        "title": "Tiga service mendaftar sebagai subscriber — tanpa saling kenal",
+        "desc": "EmailService, InventoryService, dan AnalyticsService masing-masing mendaftarkan minatnya pada satu jenis event, misalnya \"OrderPlaced\", ke Event Bus. Ketiganya tidak tahu-menahu satu sama lain, dan yang penting: OrderService juga tidak tahu bahwa mereka ada.",
+        "fields": [["Mendaftar ke Event Bus", "EmailService, InventoryService, AnalyticsService"], ["Event yang diminati", "OrderPlaced"]]
+      },
+      {
+        "tag": "EVENT DITERBITKAN",
+        "title": "OrderService menerbitkan event OrderPlaced ke Event Bus",
+        "desc": "OrderService cukup mengumumkan satu hal: \"pesanan baru saja dibuat\", lengkap dengan detail datanya. Ia mengirim ini ke Event Bus dan langsung lanjut mengerjakan hal lain — tidak peduli, bahkan tidak tahu, siapa saja (kalau ada) yang akan bereaksi terhadap event ini.",
+        "fields": [["Diterbitkan", "event OrderPlaced"], ["Ditujukan ke", "Event Bus (bukan ke service tertentu)"]]
+      },
+      {
+        "tag": "FAN-OUT",
+        "title": "Event Bus mengirim salinan event ke SEMUA subscriber sekaligus",
+        "desc": "Event Bus meneruskan satu salinan event OrderPlaced ke setiap service yang tadi mendaftar — EmailService, InventoryService, dan AnalyticsService menerimanya secara bersamaan dan independen satu sama lain.",
+        "fields": [["Diterima oleh", "EmailService, InventoryService, AnalyticsService"], ["Cara pengiriman", "fan-out — satu event, banyak penerima"]]
+      },
+      {
+        "tag": "DIPROSES SENDIRI-SENDIRI",
+        "title": "Setiap subscriber memproses event dengan caranya masing-masing",
+        "desc": "EmailService mengirim email konfirmasi, InventoryService mengurangi stok, AnalyticsService mencatat metrik — ketiganya berjalan pada kecepatannya sendiri, tanpa saling menunggu, dan tanpa memblokir OrderService yang sudah lama selesai dan lanjut ke pekerjaan lain.",
+        "fields": [["EmailService", "mengirim email konfirmasi"], ["InventoryService", "mengurangi stok"], ["AnalyticsService", "mencatat metrik penjualan"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Subscriber baru bisa ditambahkan tanpa mengubah kode OrderService sedikit pun",
+        "desc": "Misalkan tim keamanan ingin menambahkan FraudDetectionService untuk mengecek pesanan mencurigakan. Mereka cukup mendaftarkannya sebagai subscriber baru untuk event OrderPlaced — OrderService, yang menerbitkan event itu, tidak perlu disentuh atau bahkan di-deploy ulang sama sekali.",
+        "fields": [["Subscriber baru", "FraudDetectionService"], ["Perubahan di OrderService", "nihil — inilah inti decoupling"]]
+      }
+    ],
+    "queue": [
+      {
+        "tag": "MULAI",
+        "title": "Producer, antrean kosong, dan Consumer yang siap bekerja",
+        "desc": "PaymentService (producer) akan mengirim event ke sebuah antrean (queue/message broker), dan NotificationService (consumer) akan mengambilnya dari sana untuk diproses. Saat ini antreannya masih kosong — belum ada apa-apa yang dikirim.",
+        "fields": [["Producer", "PaymentService"], ["Consumer", "NotificationService"], ["Isi antrean", "kosong"]]
+      },
+      {
+        "tag": "PRODUCER MENGIRIM BERUNTUN",
+        "title": "Producer mengirim 5 event dengan cepat berturut-turut",
+        "desc": "PaymentService memproses lima transaksi pembayaran dalam waktu singkat, dan setiap kali selesai langsung mengirim event ke antrean. Producer tidak menunggu antrean 'kosong' dulu — ia cukup menaruh event di antrean lalu lanjut ke pekerjaan berikutnya.",
+        "fields": [["Event dikirim", "5 event pembayaran"], ["Isi antrean sekarang", "5 event menunggu diproses"]]
+      },
+      {
+        "tag": "CONSUMER MEMPROSES SATU-SATU",
+        "title": "Consumer mengambil event dari depan antrean, satu per satu",
+        "desc": "NotificationService mengambil event paling depan (FIFO), memprosesnya sampai selesai, baru mengambil yang berikutnya. Kecepatan consumer boleh berbeda jauh dari kecepatan producer — antrean-lah yang menampung selisihnya, bukan producer yang harus menunggu.",
+        "fields": [["Diproses", "1 event pada satu waktu"], ["Isi antrean sekarang", "menyusut perlahan seiring diproses"]]
+      },
+      {
+        "tag": "CONSUMER MATI ⚠",
+        "title": "NotificationService crash di tengah jalan — tapi event tidak hilang",
+        "desc": "Consumer tiba-tiba berhenti (misalnya sedang di-deploy ulang, atau crash). Event yang belum sempat diproses tetap AMAN tersimpan di antrean — tidak hilang begitu saja. PaymentService bahkan tidak menyadari ada masalah, karena ia memang tidak pernah menunggu consumer merespons.",
+        "fields": [["Consumer", "tidak aktif (down)"], ["Event yang tersisa", "tetap tersimpan di antrean, tidak hilang"]]
+      },
+      {
+        "tag": "CONSUMER MENGEJAR KETERTINGGALAN",
+        "title": "NotificationService kembali online dan melanjutkan dari titik terakhir",
+        "desc": "Begitu consumer hidup kembali, ia langsung melanjutkan mengambil event dari antrean persis dari tempat ia berhenti — mengejar (catch up) semua event yang menumpuk selama ia mati, tanpa ada yang perlu dikirim ulang secara manual.",
+        "fields": [["Consumer", "aktif kembali"], ["Yang dilakukan", "mengambil sisa event yang menumpuk, satu per satu"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Antrean berfungsi sebagai peredam kejut di antara dua kecepatan berbeda",
+        "desc": "Semua event akhirnya terproses. Antrean tadi bertindak seperti bantalan (buffer) yang melindungi producer dari harus menunggu consumer, dan melindungi consumer dari kewalahan menghadapi lonjakan mendadak — bahkan tetap aman kalau salah satu pihak sempat mati sesaat.",
+        "fields": [["Isi antrean", "kosong kembali"], ["Manfaat utama", "meredam perbedaan kecepatan & downtime sementara"]]
+      }
+    ],
+    "choreography": [
+      {
+        "tag": "MULAI",
+        "title": "Satu alur bisnis, tiga service yang harus bekerja berurutan",
+        "desc": "Saat pesanan dibuat, tiga hal harus terjadi berurutan: OrderService mencatat pesanan, PaymentService memproses pembayaran, lalu ShippingService mengirim barang. Pertanyaannya: siapa yang mengatur urutan ini terjadi?",
+        "fields": [["Langkah 1", "OrderService — catat pesanan"], ["Langkah 2", "PaymentService — proses pembayaran"], ["Langkah 3", "ShippingService — kirim barang"]]
+      },
+      {
+        "tag": "DUA PENDEKATAN",
+        "title": "Ada dua cara umum mengoordinasikan alur seperti ini",
+        "desc": "Koreografi: tidak ada koordinator pusat, tiap service bereaksi sendiri terhadap event dari service lain. Orkestrasi: ada satu koordinator pusat yang secara eksplisit memerintah tiap service kapan harus bekerja.",
+        "fields": [["Koreografi", "tiap service bereaksi mandiri terhadap event"], ["Orkestrasi", "satu koordinator pusat mengatur semua langkah"]]
+      },
+      {
+        "tag": "KOREOGRAFI",
+        "title": "Tiap service bereaksi terhadap event dari service sebelumnya, sendiri-sendiri",
+        "desc": "OrderService menerbitkan event \"OrderPlaced\". PaymentService, yang berlangganan event itu, otomatis memprosesnya lalu menerbitkan event \"PaymentCompleted\" miliknya sendiri. ShippingService, yang berlangganan \"PaymentCompleted\", otomatis mulai mengirim barang. Tidak ada satu pun pihak yang tahu keseluruhan alur — semuanya cuma bereaksi terhadap event yang lewat.",
+        "fields": [["OrderService menerbitkan", "OrderPlaced"], ["PaymentService bereaksi lalu menerbitkan", "PaymentCompleted"], ["ShippingService bereaksi terhadap", "PaymentCompleted"]]
+      },
+      {
+        "tag": "ORKESTRASI",
+        "title": "Satu Orchestrator secara eksplisit memanggil tiap service berurutan",
+        "desc": "Sebagai perbandingan: dengan orkestrasi, ada satu service tambahan — Orchestrator — yang secara aktif memanggil OrderService, menunggu selesai, lalu memanggil PaymentService, menunggu selesai, lalu memanggil ShippingService. Orchestrator ini tahu dan mengatur keseluruhan alur dari satu tempat.",
+        "fields": [["Orchestrator memanggil", "OrderService → PaymentService → ShippingService, berurutan"], ["Yang tahu keseluruhan alur", "hanya Orchestrator"]]
+      },
+      {
+        "tag": "BANDINGKAN",
+        "title": "Trade-off keduanya berkebalikan",
+        "desc": "Koreografi: tidak ada titik pusat yang bisa jadi bottleneck, mudah menambah reaksi baru tanpa mengubah service lain — tapi alur keseluruhan jadi sulit dilihat sekaligus, tersebar di banyak service. Orkestrasi: alur mudah dipantau dan dilacak dari satu tempat — tapi Orchestrator jadi titik gagal tunggal (single point of failure) dan bisa jadi bottleneck.",
+        "fields": [["Kelebihan koreografi", "tidak ada single point of failure, mudah diperluas"], ["Kekurangan koreografi", "alur keseluruhan tersebar, sulit dilacak"], ["Kelebihan orkestrasi", "alur eksplisit & mudah dipantau"], ["Kekurangan orkestrasi", "Orchestrator jadi titik gagal tunggal"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Tidak ada yang 'lebih benar' — tergantung kebutuhan",
+        "desc": "Tim kecil dengan alur sederhana sering memilih koreografi karena fleksibel dan mudah diperluas. Alur bisnis yang panjang, kompleks, dan butuh visibilitas penuh (misalnya butuh tahu 'pesanan ini sekarang di tahap mana') sering lebih cocok dengan orkestrasi.",
+        "fields": [["Koreografi cocok untuk", "alur sederhana, tim kecil, butuh fleksibilitas"], ["Orkestrasi cocok untuk", "alur kompleks yang butuh visibilitas & kontrol terpusat"]]
+      }
+    ],
+    "resilience": [
+      {
+        "tag": "MULAI",
+        "title": "Versi sinkron: OrderService memanggil langsung dan menunggu",
+        "desc": "Dalam desain sinkron (misalnya lewat REST API biasa), OrderService memanggil PaymentService secara langsung dan MENUNGGU jawabannya, yang mana PaymentService juga memanggil ShippingService secara langsung dan menunggu jawabannya juga. Semuanya berantai dan saling menunggu.",
+        "fields": [["Pola panggilan", "OrderService → (tunggu) → PaymentService → (tunggu) → ShippingService"], ["Sifatnya", "blocking — tiap pemanggil menunggu jawaban"]]
+      },
+      {
+        "tag": "KASUS NORMAL (SYNC)",
+        "title": "Kalau semua sehat, rantai ini selesai — tapi pelanggan menunggu semuanya",
+        "desc": "Ketika ketiga service sehat, rantai panggilan ini akhirnya selesai dan pelanggan mendapat jawaban sukses. Tapi perhatikan: pelanggan harus menunggu SELURUH rantai selesai — waktu tunggu totalnya adalah jumlah waktu ketiga service, bukan cuma OrderService saja.",
+        "fields": [["Hasil", "sukses, tapi lambat"], ["Waktu tunggu pelanggan", "dijumlahkan dari ketiga service"]]
+      },
+      {
+        "tag": "KASUS GAGAL (SYNC) ⚠",
+        "title": "ShippingService down → seluruh rantai ikut gagal",
+        "desc": "Sekarang ShippingService sedang bermasalah dan tidak merespons. Panggilan dari PaymentService ke ShippingService gagal/timeout — yang membuat panggilan PaymentService itu sendiri gagal — yang akhirnya membuat panggilan OrderService juga gagal. Pelanggan melihat pesan error, PADAHAL pembayarannya mungkin sudah berhasil diproses sebelum kegagalan terjadi.",
+        "fields": [["Yang down", "ShippingService"], ["Dampaknya", "kegagalan menjalar ke Payment lalu ke Order (cascading failure)"], ["Yang dilihat pelanggan", "pesan error, meski pembayaran mungkin sudah tercatat"]]
+      },
+      {
+        "tag": "SEKARANG EVENT-DRIVEN",
+        "title": "OrderService cukup menerbitkan event dan langsung selesai",
+        "desc": "Bandingkan dengan versi event-driven: OrderService cukup menerbitkan event \"OrderPlaced\" lalu LANGSUNG memberi tahu pelanggan bahwa pesanan diterima — tanpa menunggu PaymentService atau ShippingService sama sekali.",
+        "fields": [["OrderService", "menerbitkan event lalu langsung selesai"], ["Pelanggan menunggu", "hanya OrderService, bukan seluruh rantai"]]
+      },
+      {
+        "tag": "KASUS GAGAL (EVENT-DRIVEN)",
+        "title": "ShippingService down — tapi tidak ada yang ikut gagal",
+        "desc": "ShippingService tetap sedang bermasalah. Bedanya: event pengiriman tadi cukup menunggu dengan aman di antrean sampai ShippingService pulih — PaymentService tetap berjalan normal, dan pelanggan SUDAH menerima konfirmasi pesanan diterima jauh sebelum masalah ini terjadi. Tidak ada error yang terlihat pelanggan.",
+        "fields": [["Yang down", "ShippingService"], ["Dampaknya", "event menunggu di antrean — Payment & respons ke pelanggan tidak terpengaruh"], ["Yang dilihat pelanggan", "tidak ada error sama sekali"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Tahan banting, dengan harga: semuanya tidak terjadi seketika",
+        "desc": "Event-driven jauh lebih tahan terhadap kegagalan sebagian (partial failure) dan terasa lebih cepat bagi pelanggan. Harganya: eventual consistency — pengiriman barang mungkin baru benar-benar diproses beberapa saat kemudian, bukan seketika, dan melacak 'sedang di tahap apa sebuah pesanan' butuh usaha ekstra dibanding rantai sinkron yang mudah ditelusuri satu per satu.",
+        "fields": [["Ketahanan", "event-driven jauh lebih tahan terhadap kegagalan sebagian"], ["Trade-off", "eventual consistency — hasil akhir tidak terjadi seketika"]]
+      }
+    ]
+  }
+}

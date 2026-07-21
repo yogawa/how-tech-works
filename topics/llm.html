@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LLM: How Large Language Models Think</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#0a0a14;
+  --bg-card:rgba(20,18,40,0.85);
+  --surface:rgba(30,28,60,0.6);
+  --border:rgba(120,100,255,0.15);
+  --border-active:rgba(120,100,255,0.5);
+  --text:#e8e6f0;
+  --text-muted:#8b87a8;
+  --text-faint:#5a567a;
+  --accent:#7c5cff;
+  --accent-glow:rgba(124,92,255,0.4);
+  --neon-pink:#ff4da6;
+  --neon-cyan:#00e5ff;
+  --neon-green:#39ff85;
+  --neon-orange:#ff9f43;
+  --glass:rgba(255,255,255,0.04);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse at 20% 0%,rgba(124,92,255,0.12) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 100%,rgba(255,77,166,0.08) 0%,transparent 50%);
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  min-height:100vh;
+  padding:32px 20px 80px;
+}
+
+.wrap{max-width:1100px;margin:0 auto;}
+
+header{margin-bottom:36px;}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--neon-cyan);
+  display:flex;align-items:center;gap:10px;
+}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--neon-cyan);display:inline-block;}
+
+.lang-switch{
+  display:flex;flex-shrink:0;
+  border:1px solid var(--border);
+  border-radius:5px;overflow:hidden;
+}
+.lang-btn{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:0.04em;
+  background:transparent;border:none;
+  color:var(--text-muted);padding:6px 11px;
+  cursor:pointer;transition:background .15s,color .15s;
+}
+.lang-btn+.lang-btn{border-left:1px solid var(--border);}
+.lang-btn:hover{color:var(--text);}
+.lang-btn.active{background:var(--accent);color:#fff;font-weight:600;}
+
+h1{
+  font-weight:700;
+  font-size:clamp(28px,4.2vw,44px);
+  line-height:1.08;margin:12px 0 14px;
+  letter-spacing:-0.01em;
+}
+h1 span{color:var(--neon-pink);}
+.lede{
+  font-size:16px;line-height:1.6;
+  color:var(--text-muted);max-width:640px;
+}
+
+/* ===== PIPELINE STAGE ===== */
+.pipeline{
+  position:relative;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--bg-card);
+  padding:28px 24px 20px;
+  margin-bottom:22px;
+  overflow:hidden;
+}
+.pipeline::after{
+  content:"";
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--neon-pink),var(--neon-cyan));
+}
+
+.pipeline-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text-faint);
+  margin-bottom:20px;
+}
+
+/* Flow Container */
+.flow{
+  display:flex;align-items:center;justify-content:center;
+  gap:12px;flex-wrap:wrap;
+  min-height:180px;
+  position:relative;
+}
+
+/* Flow Nodes */
+.flow-node{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:16px 18px;
+  text-align:center;
+  min-width:130px;
+  transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  position:relative;
+}
+.flow-node.active{
+  border-color:var(--accent);
+  box-shadow:0 0 24px var(--accent-glow);
+  transform:scale(1.06);
+}
+.flow-node .icon{font-size:28px;margin-bottom:6px;display:block;}
+.flow-node .label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;font-weight:600;
+  letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--text-muted);
+}
+.flow-node .sublabel{
+  font-size:12px;color:var(--text-faint);margin-top:4px;
+}
+
+/* Arrow between nodes */
+.flow-arrow{
+  color:var(--text-faint);
+  font-size:20px;
+  flex-shrink:0;
+  transition:color 0.3s;
+}
+.flow-arrow.active{color:var(--accent);}
+
+/* Token Grid (for tokenization step) */
+.token-grid{
+  display:flex;gap:8px;flex-wrap:wrap;
+  justify-content:center;
+  margin-top:16px;
+  min-height:60px;
+}
+.token-chip{
+  background:rgba(124,92,255,0.15);
+  border:1px solid rgba(124,92,255,0.3);
+  border-radius:8px;
+  padding:8px 14px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:13px;font-weight:500;
+  color:var(--text);
+  opacity:0;transform:translateY(8px);
+  transition:all 0.3s;
+}
+.token-chip.show{opacity:1;transform:translateY(0);}
+.token-chip .tok-id{
+  display:block;font-size:9px;color:var(--text-faint);
+  margin-top:2px;
+}
+
+/* Attention Lines (SVG) */
+.attention-svg{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;
+}
+.attention-line{
+  fill:none;stroke:var(--accent);stroke-width:1.5;
+  opacity:0;transition:opacity 0.5s;
+}
+.attention-line.show{opacity:0.5;}
+
+/* Embedding Vectors */
+.vector-display{
+  display:flex;gap:10px;flex-wrap:wrap;
+  justify-content:center;margin-top:16px;
+}
+.vector-bar{
+  width:40px;height:80px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  position:relative;overflow:hidden;
+  opacity:0;transform:scale(0.8);
+  transition:all 0.4s;
+}
+.vector-bar.show{opacity:1;transform:scale(1);}
+.vector-fill{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(to top,var(--accent),var(--neon-pink));
+  border-radius:0 0 5px 5px;
+  transition:height 0.6s ease-out;
+}
+.vector-label{
+  position:absolute;bottom:-18px;left:50%;
+  transform:translateX(-50%);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9px;color:var(--text-faint);
+  white-space:nowrap;
+}
+
+/* Prediction Output */
+.prediction-output{
+  text-align:center;margin-top:16px;
+}
+.pred-token{
+  display:inline-block;
+  background:linear-gradient(135deg,var(--accent),var(--neon-pink));
+  border-radius:20px;
+  padding:10px 24px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:18px;font-weight:700;
+  color:#fff;
+  opacity:0;transform:scale(0.7);
+  transition:all 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+.pred-token.show{opacity:1;transform:scale(1);}
+
+/* Story Panel */
+.story-panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;padding:30px;
+}
+.tag{
+  display:inline-block;padding:4px 12px;
+  border-radius:20px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;font-weight:700;
+  margin-bottom:15px;text-transform:uppercase;
+  letter-spacing:1px;
+  background:rgba(124,92,255,0.15);color:var(--accent);
+}
+.story-title{font-size:24px;font-weight:700;margin:0 0 10px;color:var(--text);}
+.story-desc{font-size:16px;color:var(--text-muted);line-height:1.6;margin:0 0 25px;}
+
+.data-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;}
+.data-card{
+  background:rgba(0,0,0,0.3);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:8px;padding:15px;
+}
+.data-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;color:var(--text-muted);margin-bottom:5px;
+}
+.data-val{font-size:15px;font-weight:600;color:var(--neon-cyan);}
+
+/* Controls */
+.controls{display:flex;align-items:center;justify-content:center;gap:15px;margin-top:30px;}
+button.ctrl-btn{
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:600;font-size:14px;
+  padding:12px 24px;border-radius:30px;
+  cursor:pointer;transition:all 0.2s;
+}
+button.ctrl-btn:hover:not(:disabled){
+  background:rgba(255,255,255,0.1);
+  border-color:var(--border-active);
+  transform:translateY(-2px);
+}
+button.ctrl-btn:disabled{opacity:0.3;cursor:not-allowed;}
+button.ctrl-btn.primary{
+  background:linear-gradient(135deg,var(--accent),var(--neon-pink));
+  border:none;
+  box-shadow:0 5px 15px var(--accent-glow);
+}
+button.ctrl-btn.primary:hover:not(:disabled){
+  box-shadow:0 8px 25px var(--accent-glow);
+}
+
+.timeline{display:flex;gap:8px;margin:0 20px;}
+.dot{
+  width:10px;height:10px;border-radius:50%;
+  background:rgba(255,255,255,0.1);transition:all 0.3s;
+}
+.dot.done{background:var(--accent);}
+.dot.now{background:var(--neon-pink);box-shadow:0 0 10px var(--neon-pink);transform:scale(1.3);}
+
+/* Loading */
+.loading{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;color:var(--accent);
+  z-index:100;transition:opacity 0.5s;
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">LOADING MODEL...</div>
+
+<div class="wrap" id="wrap" style="opacity:0;transition:opacity 1s;">
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="eyebrow" id="eyebrow"></div>
+        <h1 id="h1"></h1>
+        <p class="lede" id="lede"></p>
+      </div>
+      <div class="lang-switch" id="langSwitch"></div>
+    </div>
+  </header>
+
+  <div class="pipeline" id="pipeline">
+    <div class="pipeline-label" id="pipelineLabel"></div>
+    <div class="flow" id="flow">
+      <div class="flow-node" id="fn-input">
+        <span class="icon">💬</span>
+        <div class="label" id="fl-input"></div>
+        <div class="sublabel" id="fsl-input"></div>
+      </div>
+      <div class="flow-arrow" id="fa-1">→</div>
+      <div class="flow-node" id="fn-tokenize">
+        <span class="icon">✂️</span>
+        <div class="label" id="fl-tokenize"></div>
+        <div class="sublabel" id="fsl-tokenize"></div>
+      </div>
+      <div class="flow-arrow" id="fa-2">→</div>
+      <div class="flow-node" id="fn-embed">
+        <span class="icon">📊</span>
+        <div class="label" id="fl-embed"></div>
+        <div class="sublabel" id="fsl-embed"></div>
+      </div>
+      <div class="flow-arrow" id="fa-3">→</div>
+      <div class="flow-node" id="fn-attention">
+        <span class="icon">🧠</span>
+        <div class="label" id="fl-attention"></div>
+        <div class="sublabel" id="fsl-attention"></div>
+      </div>
+      <div class="flow-arrow" id="fa-4">→</div>
+      <div class="flow-node" id="fn-output">
+        <span class="icon">✨</span>
+        <div class="label" id="fl-output"></div>
+        <div class="sublabel" id="fsl-output"></div>
+      </div>
+    </div>
+
+    <div id="detailArea" style="min-height:100px;"></div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="ctrl-btn primary" id="btnNext"></button>
+      <button class="ctrl-btn" id="btnReset" style="margin-left:20px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+</div>
+
+<script>
+const LANGS=['id','en'];
+let currentLang=new URLSearchParams(window.location.search).get('lang')||localStorage.getItem('lang')||'en';
+let i18n=null;
+let current=0;
+const totalSteps=5;
+
+const flowNodes=['input','tokenize','embed','attention','output'];
+const flowArrows=[1,2,3,4];
+
+async function loadData(){
+  const res=await fetch(`i18n/llm.${currentLang}.json`);
+  i18n=await res.json();
+}
+
+function updateStaticUI(){
+  document.documentElement.lang=currentLang;
+  document.title=i18n.documentTitle;
+  document.getElementById('eyebrow').textContent=i18n.eyebrow;
+  document.getElementById('h1').innerHTML=i18n.h1Prefix+'<span>'+i18n.h1Highlight+'</span>'+i18n.h1Suffix;
+  document.getElementById('lede').textContent=i18n.lede;
+  document.getElementById('pipelineLabel').textContent=i18n.pipelineLabel;
+
+  document.getElementById('fl-input').textContent=i18n.flowNodes.input;
+  document.getElementById('fl-tokenize').textContent=i18n.flowNodes.tokenize;
+  document.getElementById('fl-embed').textContent=i18n.flowNodes.embed;
+  document.getElementById('fl-attention').textContent=i18n.flowNodes.attention;
+  document.getElementById('fl-output').textContent=i18n.flowNodes.output;
+
+  document.getElementById('fsl-input').textContent=i18n.flowSub.input;
+  document.getElementById('fsl-tokenize').textContent=i18n.flowSub.tokenize;
+  document.getElementById('fsl-embed').textContent=i18n.flowSub.embed;
+  document.getElementById('fsl-attention').textContent=i18n.flowSub.attention;
+  document.getElementById('fsl-output').textContent=i18n.flowSub.output;
+
+  document.getElementById('btnPrev').innerHTML=i18n.controls.prev;
+  document.getElementById('btnNext').innerHTML=i18n.controls.next;
+  document.getElementById('btnReset').innerHTML=i18n.controls.reset;
+
+  const ls=document.getElementById('langSwitch');
+  ls.innerHTML='';
+  LANGS.forEach(l=>{
+    const b=document.createElement('button');
+    b.className='lang-btn'+(l===currentLang?' active':'');
+    b.innerText=l.toUpperCase();
+    b.onclick=()=>setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+function clearDetail(){
+  document.getElementById('detailArea').innerHTML='';
+}
+
+function showTokenization(){
+  const area=document.getElementById('detailArea');
+  area.innerHTML='<div class="token-grid" id="tokenGrid"></div>';
+  const grid=document.getElementById('tokenGrid');
+  const tokens=i18n.tokenExample;
+  tokens.forEach((t,i)=>{
+    const chip=document.createElement('div');
+    chip.className='token-chip';
+    chip.innerHTML=t.text+'<span class="tok-id">'+t.id+'</span>';
+    grid.appendChild(chip);
+    setTimeout(()=>chip.classList.add('show'),200+i*120);
+  });
+}
+
+function showEmbedding(){
+  const area=document.getElementById('detailArea');
+  area.innerHTML='<div class="vector-display" id="vecDisplay"></div>';
+  const disp=document.getElementById('vecDisplay');
+  const vectors=i18n.vectorExample;
+  vectors.forEach((v,i)=>{
+    const bar=document.createElement('div');
+    bar.className='vector-bar';
+    bar.innerHTML='<div class="vector-fill" style="height:0%"></div><div class="vector-label">'+v.label+'</div>';
+    disp.appendChild(bar);
+    setTimeout(()=>{
+      bar.classList.add('show');
+      bar.querySelector('.vector-fill').style.height=v.height+'%';
+    },200+i*150);
+  });
+}
+
+function showAttention(){
+  const area=document.getElementById('detailArea');
+  area.innerHTML='<div style="text-align:center;padding:20px 0;"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--text-muted);margin-bottom:12px;">'+i18n.attentionNote+'</div><div id="attentionDemo" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"></div></div>';
+  const demo=document.getElementById('attentionDemo');
+  const pairs=i18n.attentionPairs;
+  pairs.forEach((p,i)=>{
+    const el=document.createElement('div');
+    el.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 18px;text-align:center;opacity:0;transform:translateY(8px);transition:all 0.4s;';
+    el.innerHTML='<div style="font-size:18px;margin-bottom:4px;">🔗</div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:600;color:var(--text);">'+p.pair+'</div><div style="font-size:11px;color:var(--text-faint);margin-top:4px;">'+p.meaning+'</div>';
+    demo.appendChild(el);
+    setTimeout(()=>{el.style.opacity='1';el.style.transform='translateY(0)';},200+i*180);
+  });
+}
+
+function showPrediction(){
+  const area=document.getElementById('detailArea');
+  area.innerHTML='<div class="prediction-output" id="predOutput"></div>';
+  const out=document.getElementById('predOutput');
+  i18n.predTokens.forEach((t,i)=>{
+    const el=document.createElement('div');
+    el.className='pred-token';
+    el.textContent=t;
+    el.style.margin='0 4px';
+    out.appendChild(el);
+    setTimeout(()=>el.classList.add('show'),300+i*250);
+  });
+}
+
+function renderStep(){
+  clearDetail();
+
+  // Highlight active flow node
+  flowNodes.forEach((n,i)=>{
+    const el=document.getElementById('fn-'+n);
+    el.classList.remove('active');
+    if(i<=current) el.classList.add('active');
+  });
+
+  // Highlight active arrows
+  flowArrows.forEach(a=>{
+    const el=document.getElementById('fa-'+a);
+    el.classList.remove('active');
+    if(a<=current) el.classList.add('active');
+  });
+
+  // Show detail for current step
+  if(current===1) showTokenization();
+  else if(current===2) showEmbedding();
+  else if(current===3) showAttention();
+  else if(current===4) showPrediction();
+
+  // Update story
+  const data=i18n.steps[current];
+  document.getElementById('tag').textContent=data.tag;
+  document.getElementById('storyTitle').textContent=data.title;
+  document.getElementById('storyDesc').textContent=data.desc;
+
+  const grid=document.getElementById('dataGrid');
+  grid.innerHTML='';
+  data.fields.forEach(([lbl,val])=>{
+    grid.innerHTML+='<div class="data-card"><div class="data-label">'+lbl+'</div><div class="data-val">'+val+'</div></div>';
+  });
+
+  // Controls & Dots
+  const track=document.getElementById('stepTrack');
+  track.innerHTML='';
+  for(let i=0;i<totalSteps;i++){
+    let cls='dot';
+    if(i<current)cls+=' done';
+    if(i===current)cls+=' now';
+    track.innerHTML+='<div class="'+cls+'"></div>';
+  }
+
+  document.getElementById('btnPrev').disabled=(current===0);
+  document.getElementById('btnNext').innerHTML=(current===totalSteps-1)?i18n.controls.done:i18n.controls.next;
+}
+
+document.getElementById('btnNext').onclick=()=>{if(current<totalSteps-1){current++;renderStep();}};
+document.getElementById('btnPrev').onclick=()=>{if(current>0){current--;renderStep();}};
+document.getElementById('btnReset').onclick=()=>{current=0;renderStep();};
+
+async function setLang(l){
+  if(l===currentLang)return;
+  currentLang=l;
+  localStorage.setItem('lang',l);
+  const u=new URL(window.location);
+  u.searchParams.set('lang',l);
+  history.replaceState(null,'',u);
+
+  await loadData();
+  updateStaticUI();
+  renderStep();
+
+  if(window.parent!==window){
+    window.parent.postMessage({type:'howitworks:lang-change',lang:l},'*');
+  }
+}
+
+async function init(){
+  await loadData();
+  updateStaticUI();
+  setTimeout(()=>{
+    renderStep();
+    document.getElementById('loadingNote').style.opacity='0';
+    setTimeout(()=>{
+      document.getElementById('loadingNote').style.display='none';
+      document.getElementById('wrap').style.opacity='1';
+    },500);
+  },300);
+}
+
+init();
+</script>
+</body>
+</html>

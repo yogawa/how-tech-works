@@ -1,0 +1,81 @@
+{
+  "documentTitle": "Docker vs. Virtual Machines",
+  "eyebrow": "Sistem & Arsitektur",
+  "h1Prefix": "Mengapa kontainer ",
+  "h1Highlight": "sangat luar biasa ringan",
+  "h1Suffix": ".",
+  "lede": "Selama bertahun-tahun, untuk menjalankan aplikasi secara terisolasi, kita menggunakan Virtual Machine (VM). Namun, VM mengharuskan kita menjalankan sistem operasi (OS) yang utuh dan berat untuk setiap aplikasi. Docker mengubah segalanya dengan berbagi Host OS, membuatnya dapat menyala seketika dan sangat hemat resource. Mari kita susun arsitekturnya untuk melihat alasannya.",
+  "figCaption": "GAMBAR 02 — PERBANDINGAN ARSITEKTUR",
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Selanjutnya &rarr;",
+    "reset": "Ulangi Dari Awal",
+    "done": "Selesai ✓",
+    "stepCounter": "Langkah {n} / {total}"
+  },
+  "legend": {
+    "title": "Referensi cepat: Komponen Arsitektur",
+    "sub": "Memahami lapisan-lapisan isolasi.",
+    "headers": ["Lapisan", "Deskripsi"],
+    "rows": [
+      {
+        "layer": "Infrastructure",
+        "dataName": "Server fisik atau hardware cloud (CPU, RAM, Disk)."
+      },
+      {
+        "layer": "Host OS",
+        "dataName": "Sistem operasi utama yang berjalan langsung di atas hardware."
+      },
+      {
+        "layer": "Hypervisor",
+        "dataName": "Software berat (seperti VMware) yang membagi hardware menjadi virtual."
+      },
+      {
+        "layer": "Docker Engine",
+        "dataName": "Daemon ringan yang mengelola kontainer menggunakan virtualisasi OS."
+      },
+      {
+        "layer": "Guest OS",
+        "dataName": "Sistem operasi utuh yang diinstal di dalam VM."
+      }
+    ]
+  },
+  "footer": "DIAGRAM INTERAKTIF — VIRTUAL MACHINES VS CONTAINERS",
+  "steps": [
+    {
+      "tag": "MULAI",
+      "title": "Fondasi: Hardware & Host OS",
+      "desc": "Baik VM maupun Kontainer dimulai dengan cara yang sama: Anda memiliki hardware fisik (Infrastructure) yang menjalankan Sistem Operasi utama (Host OS).",
+      "fields": [["Beban", "Sistem Dasar"], ["Isolasi", "Belum ada"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "LAPISAN DITAMBAHKAN",
+      "title": "Hypervisor vs. Docker Engine",
+      "desc": "Untuk menjalankan VM, Anda menginstal Hypervisor, yang memvirtualisasikan hardware fisik. Untuk kontainer, Anda menginstal Docker Engine, yang sekadar berinteraksi dengan Host OS yang ada.",
+      "fields": [["Lapisan VM", "Hypervisor (Berat)"], ["Lapisan Docker", "Docker Engine (Ringan)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "ISOLASI",
+      "title": "Beban Berat VM: Guest OS",
+      "desc": "Untuk mengisolasi aplikasi di dalam VM, Anda HARUS menginstal 'Guest OS' (seperti Windows/Linux). Ini memakan banyak ruang penyimpanan dan RAM. Docker menghemat ini sepenuhnya karena ia berbagi kernel Host OS.",
+      "fields": [["Beban OS VM", "~1GB - 20GB per aplikasi"], ["Beban OS Docker", "0GB (Berbagi Host OS)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "PENERAPAN APLIKASI",
+      "title": "Bins/Libs & Aplikasi",
+      "desc": "Terakhir, aplikasi beserta dependensinya dimuat. VM harus menduplikasi Guest OS yang berat untuk setiap aplikasi baru. Docker hanya membungkus dependensi (Bins/Libs) bersama aplikasinya.",
+      "fields": [["Total Ukuran VM", "Gigabytes (Besar)"], ["Total Ukuran Docker", "Megabytes (Sangat kecil)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "PERFORMA",
+      "title": "Kecepatan Booting & Efisiensi",
+      "desc": "Karena VM harus mem-boot sistem operasi utuh dari nol, ia membutuhkan waktu bermenit-menit untuk menyala. Docker tidak mem-boot OS; ia hanya menyalakan sebuah proses (process), yang selesai dalam hitungan milidetik.",
+      "fields": [["Waktu Boot VM", "Menit"], ["Waktu Boot Docker", "Milidetik"]],
+      "sizeUnit": null
+    }
+  ]
+}

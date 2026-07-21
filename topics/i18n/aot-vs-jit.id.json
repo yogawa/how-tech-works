@@ -1,0 +1,174 @@
+{
+  "documentTitle": "AOT vs JIT: Kapan Kode Diterjemahkan ke Bahasa Mesin?",
+  "eyebrow": "Compiler & Runtime",
+  "h1Prefix": "Menerjemahkan kode ke bahasa mesin: ",
+  "h1Highlight": "sebelum dijalankan, atau sambil dijalankan?",
+  "h1Suffix": "",
+  "lede": "Setiap program pada akhirnya harus diterjemahkan dari source code menjadi instruksi yang dimengerti CPU. Pertanyaannya: kapan penerjemahan itu terjadi? Ahead-of-Time (AOT) compiler menyelesaikan semuanya sekali saja, sebelum program pernah dijalankan sama sekali. Just-in-Time (JIT) compiler menundanya sampai program benar-benar berjalan, lalu menerjemahkan bagian yang paling sering dipakai secara bertahap sambil mengamati perilaku program yang sebenarnya. Coba empat skenario di bawah ini — alur AOT, alur JIT, dampaknya pada waktu startup, sampai kenapa JIT kadang bisa menghasilkan kode yang lebih cepat daripada AOT.",
+  "cases": {
+    "aotPipeline": "🧊 Alur Kompilasi AOT",
+    "jitPipeline": "🔥 Alur Kompilasi JIT",
+    "warmup": "⏱️ Startup & Warm-up",
+    "adaptive": "🎯 Optimisasi Adaptif"
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓"
+  },
+  "steps": {
+    "aotPipeline": [
+      {
+        "tag": "MULAI",
+        "title": "Developer menulis source code",
+        "desc": "Sebuah program ditulis dalam bahasa seperti C, C++, Go, atau Rust. Source code ini belum bisa dijalankan CPU sama sekali — CPU cuma mengerti instruksi bahasa mesin (machine code), bukan teks source code.",
+        "fields": [["Bahasa", "misalnya C, C++, Go, Rust"], ["Status", "belum bisa dieksekusi CPU"]]
+      },
+      {
+        "tag": "KOMPILASI (SEKALI SAJA)",
+        "title": "AOT compiler menerjemahkan SELURUH kode sekaligus, sebelum program berjalan",
+        "desc": "Di tahap build/compile time — jauh sebelum program pernah dijalankan sekalipun — AOT compiler membaca seluruh source code dan menerjemahkannya penuh menjadi instruksi bahasa mesin, ditargetkan untuk arsitektur CPU tertentu (misalnya x86-64 atau ARM64).",
+        "fields": [["Kapan terjadi", "compile time — sebelum program dijalankan"], ["Target", "arsitektur CPU spesifik (mis. x86-64)"]]
+      },
+      {
+        "tag": "OPTIMISASI STATIS",
+        "title": "Optimisasi dilakukan hanya berdasarkan apa yang bisa dibaca dari kode",
+        "desc": "Compiler menerapkan optimisasi seperti menghapus kode yang tidak pernah terpakai (dead code elimination) atau menghitung nilai konstan di awal (constant folding) — tapi semuanya berdasarkan analisis statis kode saja, karena compiler belum pernah melihat program ini benar-benar berjalan.",
+        "fields": [["Jenis optimisasi", "statis — berdasarkan analisis kode, bukan perilaku nyata"], ["Keterbatasan", "tidak tahu bagaimana program akan benar-benar dipakai"]]
+      },
+      {
+        "tag": "BINARY DIHASILKAN",
+        "title": "Hasilnya: satu file binary native, siap pakai",
+        "desc": "Keluaran dari proses ini adalah sebuah file executable mandiri yang sudah sepenuhnya berisi instruksi bahasa mesin. Langkah kompilasi ini hanya terjadi SATU KALI di tahap build — tidak akan terulang lagi setiap kali program dijalankan.",
+        "fields": [["Hasil", "binary native (mis. .exe, ELF)"], ["Frekuensi kompilasi", "sekali, saat build"]]
+      },
+      {
+        "tag": "DIJALANKAN",
+        "title": "Saat dijalankan, CPU langsung mengeksekusi kode native — tanpa kompilasi tambahan",
+        "desc": "Ketika pengguna membuka programnya, sistem operasi memuat binary native ini langsung ke memori, dan CPU langsung mulai mengeksekusi instruksi bahasa mesin. Tidak ada satu pun langkah penerjemahan yang terjadi di titik ini.",
+        "fields": [["Langkah kompilasi saat run", "nihil"], ["Kecepatan mulai", "langsung penuh sejak instruksi pertama"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Semua 'pemikiran berat' terjadi di awal, sekali saja",
+        "desc": "Dengan AOT, seluruh biaya kompilasi dan optimisasi dibayar di muka, sebelum program pernah dipakai penggunanya — konsekuensinya, compiler hanya bisa mengoptimalkan berdasarkan apa yang bisa ditebak dari kode, bukan dari pola pemakaian yang sesungguhnya.",
+        "fields": [["Biaya kompilasi", "dibayar sekali, di awal (build time)"], ["Yang tidak diketahui compiler", "pola pemakaian nyata saat program berjalan"]]
+      }
+    ],
+    "jitPipeline": [
+      {
+        "tag": "MULAI",
+        "title": "Source code dikompilasi ke bytecode, bukan langsung ke kode mesin",
+        "desc": "Bahasa seperti Java atau C# dikompilasi di tahap build, tapi bukan menjadi kode mesin native — melainkan menjadi bytecode (misalnya Java bytecode atau .NET IL): representasi perantara yang portable, belum terikat ke CPU tertentu.",
+        "fields": [["Bahasa", "misalnya Java, C#, JavaScript (V8)"], ["Hasil compile time", "bytecode / IR, bukan kode mesin native"]]
+      },
+      {
+        "tag": "DIJALANKAN LEWAT INTERPRETER",
+        "title": "Saat program mulai, runtime menjalankan bytecode lewat interpreter",
+        "desc": "Virtual machine (misalnya JVM atau CLR) mulai membaca bytecode satu instruksi demi satu instruksi lewat interpreter, menerjemahkannya secara langsung setiap kali dijalankan. Fleksibel, tapi relatif lambat dibanding kode native.",
+        "fields": [["Cara eksekusi awal", "interpreter — baca & jalankan satu per satu"], ["Kecepatan", "lebih lambat dari kode native"]]
+      },
+      {
+        "tag": "DIPROFILASI SAMBIL JALAN",
+        "title": "Runtime diam-diam menghitung bagian mana yang paling sering dipanggil",
+        "desc": "Selagi menginterpretasi, runtime juga mengumpulkan statistik: fungsi atau loop mana yang dipanggil berulang-ulang ('hot' — panas) dibanding kode yang jarang sekali dijalankan ('cold' — dingin).",
+        "fields": [["Yang diamati", "frekuensi eksekusi tiap fungsi/loop"], ["Tujuan", "menemukan bagian kode yang paling berharga untuk dioptimalkan"]]
+      },
+      {
+        "tag": "HOT PATH TERDETEKSI",
+        "title": "Sebuah fungsi sudah dipanggil ribuan kali — JIT compiler turun tangan",
+        "desc": "Begitu sebuah fungsi melewati ambang batas pemanggilan (misalnya sudah dipanggil >10.000 kali), JIT compiler mengompilasi KHUSUS fungsi itu menjadi kode mesin native — dilakukan saat program masih berjalan, di latar belakang.",
+        "fields": [["Fungsi yang dikompilasi", "hanya yang terdeteksi 'hot'"], ["Kapan terjadi", "saat runtime, sambil program tetap berjalan"]]
+      },
+      {
+        "tag": "KODE NATIVE DIPASANG",
+        "title": "Mulai sekarang, pemanggilan fungsi itu langsung lompat ke versi native",
+        "desc": "Setiap kali fungsi 'hot' itu dipanggil lagi, program langsung memakai versi kode mesin native yang baru dikompilasi tadi — bukan lewat interpreter lagi. Untuk fungsi ini, kecepatannya sekarang setara kode AOT.",
+        "fields": [["Sekarang dieksekusi lewat", "kode native hasil kompilasi JIT"], ["Fungsi lain yang belum 'hot'", "tetap lewat interpreter seperti biasa"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Kode yang jarang dipakai boleh selamanya tetap diinterpretasi",
+        "desc": "Bagian program yang jarang dijalankan mungkin tidak akan pernah dikompilasi sama sekali — karena biaya mengompilasinya tidak sebanding dengan manfaatnya. JIT hanya menghabiskan usaha kompilasi di tempat yang benar-benar terbukti bermanfaat.",
+        "fields": [["Kode dingin (cold)", "boleh selamanya tetap diinterpretasi"], ["Prinsip JIT", "kompilasi hanya di tempat yang terbukti sering dipakai"]]
+      }
+    ],
+    "warmup": [
+      {
+        "tag": "MULAI",
+        "title": "Dua versi program yang sama, dijalankan bersamaan",
+        "desc": "Versi A dikompilasi dengan AOT, versi B dikompilasi dengan JIT. Keduanya menjalankan tugas yang persis sama, dimulai pada detik yang sama — mari bandingkan seberapa cepat masing-masing 'siap' bekerja penuh.",
+        "fields": [["Versi A", "AOT — sudah berupa binary native"], ["Versi B", "JIT — bytecode, belum dikompilasi apa pun"]]
+      },
+      {
+        "tag": "AOT DI DETIK 0",
+        "title": "Versi AOT langsung berlari secepat mungkin, sejak instruksi pertama",
+        "desc": "Karena tidak ada lagi yang perlu dikompilasi, versi AOT langsung berjalan di kecepatan penuh sejak baris kode pertama dieksekusi. Tidak ada periode 'pemanasan' sama sekali.",
+        "fields": [["Kecepatan di detik 0", "langsung penuh (100%)"], ["Alasan", "sudah berupa kode native sejak sebelum dijalankan"]]
+      },
+      {
+        "tag": "JIT DI DETIK 0",
+        "title": "Versi JIT justru mulai lebih lambat — sedang menginterpretasi",
+        "desc": "Di momen yang sama, versi JIT masih menjalankan semuanya lewat interpreter, karena JIT compiler belum sempat mengompilasi apa pun. Kecepatannya jauh di bawah versi AOT untuk sesaat.",
+        "fields": [["Kecepatan di detik 0", "jauh di bawah AOT — masih diinterpretasi"], ["Alasan", "belum ada kode yang dianggap cukup 'hot' untuk dikompilasi"]]
+      },
+      {
+        "tag": "BEBERAPA SAAT KEMUDIAN",
+        "title": "JIT compiler sudah menemukan & mengompilasi bagian-bagian yang panas",
+        "desc": "Setelah beberapa detik berjalan, runtime sudah cukup mengumpulkan data profil dan mengompilasi hot path-nya ke kode native. Kecepatan versi JIT melonjak signifikan begitu eksekusi berpindah dari interpreter ke kode native.",
+        "fields": [["Yang terjadi", "hot path terdeteksi & dikompilasi ke native"], ["Dampak", "lonjakan kecepatan yang cukup drastis"]]
+      },
+      {
+        "tag": "KONDISI STABIL (STEADY STATE)",
+        "title": "Setelah 'pemanasan', kecepatan JIT sejajar — bahkan bisa melampaui AOT",
+        "desc": "Setelah cukup lama berjalan dan semua bagian penting sudah dikompilasi, versi JIT kini berjalan sekencang (atau di beberapa kasus, lebih kencang dari) versi AOT — tapi butuh waktu untuk sampai ke titik ini.",
+        "fields": [["Kecepatan JIT setelah warm-up", "sejajar atau melampaui AOT"], ["Harga yang dibayar", "waktu warm-up di awal"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "AOT unggul di awal, JIT unggul dalam jangka panjang (kadang)",
+        "desc": "AOT cocok untuk program yang berumur pendek dan butuh langsung cepat — CLI tool, serverless function, aplikasi command-line — karena tidak sempat 'pemanasan'. JIT lebih cocok untuk program yang berjalan lama — server, aplikasi desktop — karena biaya warm-up di awal terbayar lunas selama program berjalan lama.",
+        "fields": [["AOT cocok untuk", "program berumur pendek, butuh cepat sejak awal"], ["JIT cocok untuk", "program berumur panjang, biaya warm-up terbayar seiring waktu"]]
+      }
+    ],
+    "adaptive": [
+      {
+        "tag": "MULAI",
+        "title": "Fungsi add(a, b) dipanggil ribuan kali — selalu dengan bilangan bulat",
+        "desc": "Selama program berjalan, fungsi add(a, b) sudah dipanggil ribuan kali, dan kebetulan SELALU dengan dua bilangan bulat (integer) sebagai argumennya, tidak pernah tipe lain.",
+        "fields": [["Fungsi", "add(a, b)"], ["Pola pemanggilan sejauh ini", "selalu dengan tipe integer"]]
+      },
+      {
+        "tag": "KETERBATASAN AOT",
+        "title": "AOT compiler tidak mungkin tahu pola ini sebelumnya",
+        "desc": "AOT compiler hanya bekerja dari source code, jauh sebelum program pernah dijalankan — ia tidak punya cara untuk tahu bahwa fungsi ini nantinya SELALU dipanggil dengan integer. Karena itu, ia harus menghasilkan kode yang cukup umum untuk menangani semua kemungkinan tipe yang sah, demi keamanan.",
+        "fields": [["Yang diketahui AOT", "hanya apa yang tertulis di kode, bukan pola pemakaian nyata"], ["Konsekuensi", "kode dihasilkan bersifat umum/general, menangani semua kemungkinan tipe"]]
+      },
+      {
+        "tag": "OBSERVASI JIT",
+        "title": "JIT compiler mengamati program yang SEDANG berjalan, secara langsung",
+        "desc": "JIT compiler punya keunggulan yang AOT tidak punya: ia bisa melihat apa yang sungguh-sungguh terjadi. Ia mencatat bahwa add(a, b) sudah dipanggil 50.000 kali, dan tidak sekali pun memakai tipe selain integer.",
+        "fields": [["Diamati JIT", "add() dipanggil 50.000 kali, selalu integer"], ["Keunggulan JIT", "melihat perilaku nyata, bukan cuma menebak dari kode"]]
+      },
+      {
+        "tag": "OPTIMISASI SPEKULATIF",
+        "title": "JIT membuat versi kode yang sangat cepat, dengan asumsi (spekulasi) tipenya selalu integer",
+        "desc": "Berbekal observasi itu, JIT compiler menghasilkan versi native yang sangat teroptimasi — mengasumsikan (berspekulasi) argumennya akan selalu integer, dan melewati semua pengecekan tipe generik yang wajib dilakukan AOT demi keamanan.",
+        "fields": [["Kode dihasilkan", "sangat cepat, khusus untuk kasus integer"], ["Risikonya", "hanya benar selama asumsi itu tetap terbukti"]]
+      },
+      {
+        "tag": "DEOPTIMIZATION ⚠",
+        "title": "Suatu saat add() dipanggil dengan angka desimal — asumsi meleset",
+        "desc": "Belakangan, add() ternyata dipanggil sekali dengan bilangan desimal (float), bukan integer. Versi kode yang sudah dioptimalkan tadi tidak bisa menangani ini dengan aman — runtime mendeteksi ketidakcocokan, membuang kode teroptimasi itu (deoptimization), dan sementara kembali ke versi umum/interpreter untuk pemanggilan ini.",
+        "fields": [["Yang terjadi", "tipe argumen tidak sesuai asumsi (float, bukan integer)"], ["Tindakan runtime", "deoptimization — buang kode khusus, kembali ke versi aman"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Kekuatan JIT sekaligus harganya: kode lebih cepat, tapi butuh jaring pengaman",
+        "desc": "Inilah kenapa JIT kadang bisa menghasilkan kode yang lebih cepat daripada AOT: ia berani berspekulasi berdasarkan perilaku nyata, sesuatu yang mustahil dilakukan AOT. Harganya: JIT butuh mekanisme tambahan (profiling terus-menerus + deoptimization) yang tidak diperlukan sama sekali oleh program yang dikompilasi AOT.",
+        "fields": [["Keunggulan JIT", "bisa lebih cepat dari AOT lewat spekulasi berbasis perilaku nyata"], ["Harga yang dibayar", "butuh profiling & mekanisme deoptimization terus-menerus"]]
+      }
+    ]
+  }
+}

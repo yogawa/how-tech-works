@@ -1,0 +1,132 @@
+{
+  "documentTitle": "Perjalanan Paket: TCP/IP dari Titik ke Titik",
+  "eyebrow": "Cara Kerja Jaringan",
+  "h1Prefix": "Setiap paket adalah ",
+  "h1Highlight": "surat berlapis amplop",
+  "h1Suffix": ".",
+  "lede": "Saat data berpindah dari satu host ke host lain, ia tidak berjalan telanjang. Setiap layer TCP/IP membungkusnya dengan \"amplop\" berisi alamat dan aturan — lalu di ujung perjalanan, amplop-amplop itu dibuka satu per satu, persis kebalikan urutan saat dipasang. Tekan langkah di bawah untuk mengikuti satu paket, dari aplikasi pengirim sampai aplikasi penerima.",
+  "figCaption": "FIG. 01 — JALUR TRANSMISI",
+  "nodes": {
+    "a": { "label": "Host A", "sub": "Pengirim" },
+    "r": { "label": "Router", "sub": "Penghubung jaringan" },
+    "b": { "label": "Host B", "sub": "Penerima" }
+  },
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓",
+    "stepCounter": "Langkah {n} / {total}"
+  },
+  "stackCardTag": "BENTUK PAKET SAAT INI",
+  "stackLayers": {
+    "link": { "name": "Link (Ethernet)", "note": "MAC src/dst + FCS" },
+    "internet": { "name": "Internet (IP)", "note": "IP src/dst, TTL" },
+    "transport": { "name": "Transport (TCP)", "note": "port, seq/ack" },
+    "app": { "name": "Application", "note": "payload asli" }
+  },
+  "legend": {
+    "title": "Referensi cepat: apa yang ditambah &amp; dibuang per layer",
+    "sub": "Aturan umum: bergerak turun (encapsulation) = menambah header. Bergerak naik (decapsulation) = membuang header. Nama satuan data berubah di setiap layer.",
+    "headers": ["Layer", "Nama data", "Ditambahkan saat turun", "Dibuang saat naik"],
+    "rows": [
+      {
+        "layer": "Application",
+        "dataName": "Data / Message",
+        "added": "— (ini titik asal data, misal HTTP request)",
+        "removed": "Tidak ada header dibuang; data langsung diserahkan ke aplikasi"
+      },
+      {
+        "layer": "Transport (TCP/UDP)",
+        "dataName": "Segment (TCP) / Datagram (UDP)",
+        "added": "Port sumber &amp; tujuan, sequence &amp; ack number, flags, window size, checksum (±20 byte)",
+        "removed": "Header TCP dibuang setelah nomor urut &amp; checksum diverifikasi, port dipakai menentukan aplikasi tujuan"
+      },
+      {
+        "layer": "Internet (IP)",
+        "dataName": "Packet",
+        "added": "IP sumber &amp; tujuan, TTL, protokol, checksum header (±20 byte)",
+        "removed": "Header IP dibuang setelah TTL &amp; checksum dicek, tujuan dipastikan sudah benar host ini"
+      },
+      {
+        "layer": "Link (Ethernet/Wi-Fi)",
+        "dataName": "Frame",
+        "added": "MAC sumber &amp; tujuan, EtherType, dan trailer FCS untuk deteksi error (±18 byte)",
+        "removed": "Header &amp; trailer dibuang di setiap hop — <b>ini satu-satunya layer yang dibongkar-pasang ulang oleh router</b>"
+      }
+    ]
+  },
+  "footer": "DIAGRAM INTERAKTIF — TCP/IP ENCAPSULATION &amp; DECAPSULATION",
+  "steps": [
+    {
+      "tag": "MULAI",
+      "title": "Aplikasi membuat data",
+      "desc": "Semua bermula dari sebuah aplikasi di Host A, misalnya browser yang menyusun permintaan HTTP. Pada tahap ini data masih murni — belum ada alamat, belum ada aturan pengiriman, hanya isi pesan itu sendiri.",
+      "fields": [["Contoh isi", "GET /index.html HTTP/1.1"], ["Layer", "Application"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "+ DITAMBAHKAN",
+      "title": "Transport menambah TCP Header → jadi Segment",
+      "desc": "Layer Transport membungkus data dengan header TCP. Header ini berisi nomor port supaya nanti bisa diarahkan ke aplikasi yang tepat di sisi penerima, plus nomor urut agar data bisa disusun ulang dan dipastikan lengkap.",
+      "fields": [["Source port", "contoh: 51422"], ["Destination port", "contoh: 80 (HTTP)"], ["Sequence number", "untuk urutan potongan data"], ["Checksum", "deteksi kerusakan data"]],
+      "sizeUnit": "byte header TCP (minimum)"
+    },
+    {
+      "tag": "+ DITAMBAHKAN",
+      "title": "Internet menambah IP Header → jadi Packet",
+      "desc": "Layer Internet menambahkan alamat IP sumber dan tujuan — inilah yang membuat data tahu harus menuju ke mana secara global, melewati banyak jaringan sekalipun. TTL juga disisipkan untuk mencegah paket berputar selamanya.",
+      "fields": [["Source IP", "contoh: 192.168.1.10"], ["Destination IP", "contoh: 203.0.113.55"], ["TTL (Time To Live)", "berkurang 1 di tiap router"], ["Protocol", "menandai bahwa isinya TCP"]],
+      "sizeUnit": "byte header IP (minimum)"
+    },
+    {
+      "tag": "+ DITAMBAHKAN",
+      "title": "Link menambah Ethernet Header + Trailer → jadi Frame",
+      "desc": "Layer paling bawah menambahkan alamat MAC — alamat fisik kartu jaringan untuk lompatan (hop) berikutnya saja, bukan tujuan akhir. Di ujung frame juga ditambahkan trailer FCS untuk mendeteksi jika data rusak selama transmisi fisik.",
+      "fields": [["Source MAC", "alamat fisik Host A"], ["Destination MAC", "alamat fisik hop berikutnya (Router)"], ["EtherType", "menandai isinya paket IP"], ["FCS (trailer)", "checksum di akhir frame"]],
+      "sizeUnit": "byte header & trailer Ethernet"
+    },
+    {
+      "tag": "TRANSMISI",
+      "title": "Frame dikirim sebagai bit melalui media fisik",
+      "desc": "Frame yang sudah lengkap kini diubah menjadi sinyal listrik, cahaya, atau gelombang radio dan mengalir di sepanjang kabel atau udara menuju Router. Di titik ini, seluruh bungkus (TCP + IP + Ethernet) ikut bersama data.",
+      "fields": [["Bentuk data", "deretan bit 0 dan 1"], ["Media", "kabel tembaga / fiber optik / radio Wi-Fi"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "− DIBUANG, LALU DIPASANG ULANG",
+      "title": "Router membuka Ethernet, lalu memasangnya kembali",
+      "desc": "Router hanya berkepentingan dengan lapisan Link dan Internet. Ia membongkar header Ethernet lama, memeriksa header IP untuk tahu ke mana paket harus diteruskan, mengurangi TTL sebesar 1, lalu memasang header Ethernet BARU dengan alamat MAC untuk hop selanjutnya.",
+      "fields": [["Dibuang", "Ethernet header & trailer lama"], ["Diperiksa & diubah", "TTL dikurangi 1 di header IP"], ["Dipasang ulang", "Ethernet header baru menuju Host B"]],
+      "sizeUnit": "byte total tidak berubah, isi MAC berganti"
+    },
+    {
+      "tag": "TRANSMISI",
+      "title": "Frame baru mengalir menuju Host B",
+      "desc": "Dengan alamat MAC baru terpasang, frame melanjutkan perjalanan sebagai bit menuju Host B. Header IP dan TCP di dalamnya tidak disentuh sama sekali — keduanya bersifat end-to-end, bertahan utuh dari pengirim asli sampai penerima akhir.",
+      "fields": [["IP & TCP header", "tetap sama seperti saat pertama dibuat"], ["Ethernet header", "versi baru dari Router"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "− DIBUANG",
+      "title": "Host B membuka Ethernet Header",
+      "desc": "Host B menerima frame, memverifikasi FCS untuk memastikan tidak ada kerusakan saat transmisi, lalu membuang header dan trailer Ethernet karena tugasnya sudah selesai: mengantarkan bit sampai ke perangkat yang benar.",
+      "fields": [["Diperiksa", "FCS trailer untuk cek keutuhan data"], ["Dibuang", "MAC header & trailer Ethernet"]],
+      "sizeUnit": "byte dilepas"
+    },
+    {
+      "tag": "− DIBUANG",
+      "title": "Host B membuka IP Header",
+      "desc": "Layer Internet memeriksa apakah alamat IP tujuan memang milik host ini, mengecek checksum header, lalu membuang header IP karena tugas pengalamatan lintas jaringan sudah tuntas.",
+      "fields": [["Diperiksa", "IP tujuan cocok dengan host ini?"], ["Dibuang", "Header IP lengkap"]],
+      "sizeUnit": "byte dilepas"
+    },
+    {
+      "tag": "SELESAI",
+      "title": "Host B membuka TCP Header — data sampai ke aplikasi",
+      "desc": "Layer Transport memakai nomor port untuk mengantarkan data ke aplikasi yang tepat, memverifikasi nomor urut agar susunan data benar, lalu membuang header TCP. Yang tersisa persis sama dengan data asli yang dibuat aplikasi Host A.",
+      "fields": [["Diperiksa", "Port tujuan → diarahkan ke aplikasi"], ["Dibuang", "Header TCP lengkap"], ["Hasil akhir", "Data identik dengan pengirim"]],
+      "sizeUnit": "byte dilepas"
+    }
+  ]
+}

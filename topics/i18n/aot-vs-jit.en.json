@@ -1,0 +1,174 @@
+{
+  "documentTitle": "AOT vs JIT: When Does Code Get Translated to Machine Language?",
+  "eyebrow": "Compilers & Runtimes",
+  "h1Prefix": "Translating code into machine language: ",
+  "h1Highlight": "before it runs, or while it runs?",
+  "h1Suffix": "",
+  "lede": "Every program eventually has to be translated from source code into instructions the CPU understands. The question is: when does that translation happen? An Ahead-of-Time (AOT) compiler finishes the whole job once, before the program ever runs at all. A Just-in-Time (JIT) compiler puts it off until the program is actually running, then translates the most-used parts gradually, while watching the program's real behavior. Try the four scenarios below — the AOT pipeline, the JIT pipeline, the impact on startup time, and why JIT can sometimes produce code that's even faster than AOT.",
+  "cases": {
+    "aotPipeline": "🧊 The AOT Pipeline",
+    "jitPipeline": "🔥 The JIT Pipeline",
+    "warmup": "⏱️ Startup & Warm-up",
+    "adaptive": "🎯 Adaptive Optimization"
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓"
+  },
+  "steps": {
+    "aotPipeline": [
+      {
+        "tag": "START",
+        "title": "A developer writes source code",
+        "desc": "A program is written in a language like C, C++, Go, or Rust. This source code can't be run by the CPU at all yet — a CPU only understands machine-code instructions, not source code text.",
+        "fields": [["Language", "e.g. C, C++, Go, Rust"], ["Status", "not yet executable by the CPU"]]
+      },
+      {
+        "tag": "COMPILE (JUST ONCE)",
+        "title": "The AOT compiler translates the ENTIRE program at once, before it ever runs",
+        "desc": "At build/compile time — long before the program is ever launched — the AOT compiler reads the whole source code and fully translates it into machine-code instructions, targeted at a specific CPU architecture (say, x86-64 or ARM64).",
+        "fields": [["When it happens", "compile time — before the program runs"], ["Target", "a specific CPU architecture (e.g. x86-64)"]]
+      },
+      {
+        "tag": "STATIC OPTIMIZATION",
+        "title": "Optimizations are based only on what can be read from the code itself",
+        "desc": "The compiler applies optimizations like removing code that's never used (dead code elimination) or computing constant values upfront (constant folding) — but all of it is based on static analysis of the code alone, since the compiler has never actually seen this program run.",
+        "fields": [["Kind of optimization", "static — based on code analysis, not real behavior"], ["Limitation", "has no idea how the program will actually be used"]]
+      },
+      {
+        "tag": "BINARY PRODUCED",
+        "title": "The result: one native binary file, ready to go",
+        "desc": "The output of this process is a standalone executable file that's already fully machine-code instructions. This compilation step happens only ONCE, at build time — it will never repeat every time the program is launched.",
+        "fields": [["Result", "a native binary (e.g. .exe, ELF)"], ["Compilation frequency", "once, at build time"]]
+      },
+      {
+        "tag": "RUN",
+        "title": "When launched, the CPU executes native code directly — no extra compilation",
+        "desc": "When the user opens the program, the operating system loads this native binary straight into memory, and the CPU immediately starts executing machine-code instructions. Not a single translation step happens at this point.",
+        "fields": [["Compilation steps at run time", "none"], ["Starting speed", "full speed from the very first instruction"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "All the heavy thinking happened upfront, just once",
+        "desc": "With AOT, the entire cost of compiling and optimizing is paid upfront, before the program is ever used by anyone — the trade-off is that the compiler can only optimize based on what it can guess from the code, not from how the program is actually used.",
+        "fields": [["Compilation cost", "paid once, upfront (at build time)"], ["What the compiler never knows", "the program's actual real-world usage pattern"]]
+      }
+    ],
+    "jitPipeline": [
+      {
+        "tag": "START",
+        "title": "Source code is compiled to bytecode, not straight to machine code",
+        "desc": "A language like Java or C# is compiled at build time, but not into native machine code — instead, into bytecode (e.g. Java bytecode or .NET IL): a portable intermediate form that isn't tied to any specific CPU yet.",
+        "fields": [["Language", "e.g. Java, C#, JavaScript (V8)"], ["Compile-time output", "bytecode / IR, not native machine code"]]
+      },
+      {
+        "tag": "RUN VIA THE INTERPRETER",
+        "title": "When the program starts, the runtime executes bytecode through an interpreter",
+        "desc": "The virtual machine (say, the JVM or the CLR) starts reading the bytecode one instruction at a time through an interpreter, translating it on the fly every time it runs. Flexible, but relatively slow compared to native code.",
+        "fields": [["Initial execution mode", "interpreter — read & run one instruction at a time"], ["Speed", "slower than native code"]]
+      },
+      {
+        "tag": "PROFILED WHILE RUNNING",
+        "title": "The runtime quietly counts which parts are called the most",
+        "desc": "While interpreting, the runtime is also gathering statistics: which functions or loops keep getting called over and over ('hot') versus code that barely ever runs ('cold').",
+        "fields": [["What's tracked", "how often each function/loop executes"], ["Purpose", "find the code that's most worth optimizing"]]
+      },
+      {
+        "tag": "HOT PATH DETECTED",
+        "title": "A function has now been called thousands of times — the JIT compiler steps in",
+        "desc": "Once a function crosses a call-count threshold (say, over 10,000 calls), the JIT compiler compiles JUST that function into native machine code — done while the program is still running, in the background.",
+        "fields": [["Functions compiled", "only the ones flagged as 'hot'"], ["When it happens", "at runtime, while the program keeps running"]]
+      },
+      {
+        "tag": "NATIVE CODE SWAPPED IN",
+        "title": "From now on, calling that function jumps straight to the native version",
+        "desc": "Every time that 'hot' function gets called again, the program now uses the freshly compiled native machine code — no longer going through the interpreter. For this function, its speed now matches AOT-compiled code.",
+        "fields": [["Now executed via", "native code produced by the JIT compiler"], ["Other functions not yet 'hot'", "still run through the interpreter as usual"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "Rarely-used code may stay interpreted forever",
+        "desc": "Parts of the program that barely ever run might never get compiled at all — because the cost of compiling them wouldn't be worth the benefit. JIT only spends compilation effort where it's actually proven to pay off.",
+        "fields": [["Cold code", "may stay interpreted forever"], ["JIT's principle", "only compile where it's proven to be worth it"]]
+      }
+    ],
+    "warmup": [
+      {
+        "tag": "START",
+        "title": "Two versions of the same program, launched at the same moment",
+        "desc": "Version A is AOT-compiled, version B is JIT-compiled. Both are running the exact same task, starting at the exact same second — let's compare how fast each one gets 'up to full speed'.",
+        "fields": [["Version A", "AOT — already a native binary"], ["Version B", "JIT — bytecode, nothing compiled yet"]]
+      },
+      {
+        "tag": "AOT AT SECOND 0",
+        "title": "The AOT version runs at full speed immediately, from the very first instruction",
+        "desc": "Since there's nothing left to compile, the AOT version runs at full speed the moment its first line of code executes. There's no 'warm-up' period at all.",
+        "fields": [["Speed at second 0", "full speed immediately (100%)"], ["Why", "it was already native code before it even launched"]]
+      },
+      {
+        "tag": "JIT AT SECOND 0",
+        "title": "The JIT version actually starts out slower — it's interpreting",
+        "desc": "At that same moment, the JIT version is still running everything through the interpreter, because the JIT compiler hasn't had a chance to compile anything yet. Its speed is well below the AOT version, for now.",
+        "fields": [["Speed at second 0", "well below AOT — still being interpreted"], ["Why", "no code has been flagged 'hot' enough to compile yet"]]
+      },
+      {
+        "tag": "A FEW MOMENTS LATER",
+        "title": "The JIT compiler has now found & compiled the hot spots",
+        "desc": "After a few seconds of running, the runtime has gathered enough profiling data and compiled its hot paths into native code. The JIT version's speed jumps significantly as execution shifts from the interpreter to native code.",
+        "fields": [["What happened", "hot paths detected & compiled to native code"], ["Effect", "a fairly dramatic speed jump"]]
+      },
+      {
+        "tag": "STEADY STATE",
+        "title": "After warming up, JIT's speed catches up to — and can even beat — AOT",
+        "desc": "After running long enough, with all the important parts now compiled, the JIT version runs just as fast as (or in some cases, faster than) the AOT version — but it took time to get there.",
+        "fields": [["JIT's speed after warm-up", "on par with, or faster than, AOT"], ["The price paid", "warm-up time at the start"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "AOT wins early, JIT can win over the long run",
+        "desc": "AOT suits short-lived programs that need to be fast right away — CLI tools, serverless functions, command-line apps — since there's no time to warm up. JIT suits long-running programs — servers, desktop apps — where the upfront warm-up cost gets fully paid off over a long run.",
+        "fields": [["AOT fits", "short-lived programs that need speed from second one"], ["JIT fits", "long-running programs where warm-up cost pays off over time"]]
+      }
+    ],
+    "adaptive": [
+      {
+        "tag": "START",
+        "title": "The function add(a, b) is called thousands of times — always with integers",
+        "desc": "While the program runs, the function add(a, b) has already been called thousands of times, and it just so happens EVERY call so far has passed two integers as arguments — never any other type.",
+        "fields": [["Function", "add(a, b)"], ["Call pattern so far", "always with integer types"]]
+      },
+      {
+        "tag": "AOT'S LIMITATION",
+        "title": "An AOT compiler has no way of knowing this pattern in advance",
+        "desc": "An AOT compiler only works from source code, long before the program ever runs — it has no way of knowing this function will always end up being called with integers. So it must generate code general enough to safely handle any valid type, just in case.",
+        "fields": [["What AOT knows", "only what's written in the code, not the real usage pattern"], ["Consequence", "generates general-purpose code that handles every possible type"]]
+      },
+      {
+        "tag": "JIT'S OBSERVATION",
+        "title": "The JIT compiler watches the program actually running, in real time",
+        "desc": "The JIT compiler has an advantage AOT doesn't: it can see what's really happening. It records that add(a, b) has been called 50,000 times, and not once with anything other than an integer.",
+        "fields": [["Observed by JIT", "add() called 50,000 times, always integers"], ["JIT's edge", "sees real behavior instead of just guessing from the code"]]
+      },
+      {
+        "tag": "SPECULATIVE OPTIMIZATION",
+        "title": "JIT produces a highly specialized, fast version, speculating the type will always be integer",
+        "desc": "Armed with that observation, the JIT compiler generates a highly optimized native version — speculating that the arguments will always be integers, and skipping all the generic type-checking overhead AOT is forced to include for safety.",
+        "fields": [["Code produced", "very fast, specialized for the integer case"], ["The risk", "only correct for as long as that assumption holds"]]
+      },
+      {
+        "tag": "DEOPTIMIZATION ⚠",
+        "title": "At some point, add() gets called with a decimal number — the assumption breaks",
+        "desc": "Later on, add() ends up getting called once with a floating-point number instead of an integer. The specialized code can't safely handle that — the runtime detects the mismatch, throws away (deoptimizes) that specialized code, and temporarily falls back to the safe, general version for this call.",
+        "fields": [["What happened", "the argument type broke the assumption (float, not integer)"], ["Runtime's response", "deoptimization — discard the specialized code, fall back to the safe version"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "JIT's superpower and its price, in one package: faster code, but it needs a safety net",
+        "desc": "This is exactly why JIT can sometimes produce faster code than AOT: it can safely speculate based on real observed behavior, something AOT simply cannot do. The price: JIT needs extra machinery (continuous profiling + deoptimization) that an AOT-compiled program never needs at all.",
+        "fields": [["JIT's advantage", "can beat AOT's speed via speculation based on real behavior"], ["The price paid", "requires ongoing profiling & deoptimization machinery"]]
+      }
+    ]
+  }
+}

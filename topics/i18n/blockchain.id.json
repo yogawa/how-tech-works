@@ -1,0 +1,90 @@
+{
+  "documentTitle": "Blockchain & Konsensus",
+  "eyebrow": "Keamanan & Kriptografi",
+  "h1Prefix": "Cara mempercayai data ",
+  "h1Highlight": "tanpa otoritas pusat",
+  "h1Suffix": ".",
+  "lede": "Blockchain hanyalah sebuah database yang dibagikan ke seluruh jaringan komputer. Namun alih-alih mempercayai satu perusahaan (seperti bank) untuk menjaga datanya, jaringan ini menggunakan kriptografi dan aturan konsensus yang membuatnya hampir mustahil untuk diubah atau diretas.",
+  "figCaption": "GAMBAR 04 — SKENARIO BLOCKCHAIN",
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Selanjutnya &rarr;",
+    "reset": "Ulangi Dari Awal",
+    "done": "Selesai ✓",
+    "stepCounter": "Langkah {n} / {total}",
+    "tamperBtn": "RETAS"
+  },
+  "cases": {
+    "case1": "Transaksi Normal",
+    "case2": "Peretasan Data",
+    "case3": "Konsensus P2P"
+  },
+  "steps": {
+    "case1": [
+      {
+        "tag": "MULAI",
+        "title": "Blok Genesis",
+        "desc": "Setiap blockchain dimulai dengan Blok Genesis (Blok 0). Blok ini memiliki data dan Hash kriptografi unik (sidik jari digitalnya). Karena ini blok pertama, 'Previous Hash'-nya hanyalah 0000.",
+        "fields": [["Tindakan", "Blok Genesis dibuat"]]
+      },
+      {
+        "tag": "TX BARU",
+        "title": "Transaksi Baru Tiba",
+        "desc": "Seseorang ingin mengirim uang. Transaksi tersebut dikelompokkan ke dalam Blok 1. Namun sebelum ditambahkan ke rantai, ia harus 'ditambang' (mined).",
+        "fields": [["Data", "Alice membayar Bob $50"]]
+      },
+      {
+        "tag": "MINING",
+        "title": "Penambangan (Proof of Work)",
+        "desc": "Para penambang bersaing mencari angka khusus (Nonce) yang, jika digabungkan dengan data blok, menghasilkan Hash yang diawali beberapa angka nol. Ini butuh daya komputasi besar.",
+        "fields": [["Status", "Menghitung Nonce..."]]
+      },
+      {
+        "tag": "DITAMBAHKAN",
+        "title": "Blok Terhubung",
+        "desc": "Penambang menemukan Nonce yang tepat! Blok 1 ditambahkan. Yang terpenting, Blok 1 menyertakan Hash dari Blok 0. 'Tautan' inilah yang menjadikannya sebuah rantai (chain).",
+        "fields": [["Hasil", "Blok 1 Diamankan"]]
+      }
+    ],
+    "case2": [
+      {
+        "tag": "STABIL",
+        "title": "Rantai yang Sehat",
+        "desc": "Di sini kita memiliki rantai 3 blok yang sangat sehat. Perhatikan bagaimana 'Previous Hash' di Blok 2 sama persis dengan 'Hash' milik Blok 1. Semuanya terhubung secara matematis.",
+        "fields": [["Status", "Rantai Valid"]]
+      },
+      {
+        "tag": "TAMPER",
+        "title": "Upaya Peretasan",
+        "desc": "Seorang peretas mencoba mengubah data di Blok 1 (misal, mengubah '$10' jadi '$1000'). Tekan tombol 'RETAS' pada Blok 1 untuk menyimulasikan serangan.",
+        "fields": [["Tindakan", "Menunggu peretasan..."]]
+      },
+      {
+        "tag": "HANCUR",
+        "title": "Rantai Terputus",
+        "desc": "Karena data di Blok 1 berubah, Hash-nya berubah total. Akibatnya, 'Previous Hash' milik Blok 2 tidak lagi cocok dengan Blok 1. Blok 2 dan Blok 3 otomatis tidak valid (merah). Agar berhasil meretas, ia harus menambang ulang Blok 1, 2, dan 3 sebelum orang lain membuat blok baru—hal yang nyaris mustahil.",
+        "fields": [["Status", "Rantai Tidak Valid!"]]
+      }
+    ],
+    "case3": [
+      {
+        "tag": "SINKRON",
+        "title": "Node Selaras",
+        "desc": "Blockchain adalah jaringan Peer-to-Peer (P2P). Di sini, Node A, Node B, dan Node C semuanya memiliki salinan blockchain yang persis sama.",
+        "fields": [["Status Jaringan", "Konsensus Tercapai"]]
+      },
+      {
+        "tag": "FORK",
+        "title": "Cabang Sementara (Fork)",
+        "desc": "Terkadang, dua penambang menyelesaikan blok di saat yang persis bersamaan! Node A menerima Blok X, tapi Node C menerima Blok Y. Jaringan terbelah sementara waktu (Fork).",
+        "fields": [["Node A", "Menambang di Blok X"], ["Node C", "Menambang di Blok Y"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Rantai Terpanjang Menang",
+        "desc": "Kebingungan ini selesai saat blok BERIKUTNYA ditemukan. Penambang menemukan Blok Z dan menempelkannya ke rantai Node A. Aturan utama blockchain adalah 'Rantai Terpanjang adalah Kebenaran'. Node C melihat rantai Node A lebih panjang, membuang Blok Y, dan meniru rantai Node A untuk kembali mencapai konsensus.",
+        "fields": [["Pemenang", "Rantai Node A (Terpanjang)"]]
+      }
+    ]
+  }
+}

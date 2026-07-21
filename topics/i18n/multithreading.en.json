@@ -1,0 +1,78 @@
+{
+  "documentTitle": "Multithreading: Running Tasks Concurrently",
+  "eyebrow": "Systems & OS",
+  "h1Prefix": "A program can have ",
+  "h1Highlight": "multiple trains of thought",
+  "h1Suffix": ".",
+  "lede": "Instead of executing tasks one by one, a program can split them into 'threads' that run concurrently. This makes things faster but introduces new problems when threads try to share the same data. Let's see how it works and how to manage the chaos with locks.",
+  "figCaption": "FIG. 01 — MULTITHREADING",
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart",
+    "done": "Done ✓",
+    "stepCounter": "Step {n} / {total}"
+  },
+  "legend": {
+    "title": "Quick reference: concepts",
+    "sub": "Common terms in multithreading.",
+    "headers": ["Term", "Description"],
+    "rows": [
+      {
+        "layer": "Thread",
+        "dataName": "An independent sequence of execution within a program.",
+        "added": "-",
+        "removed": "-"
+      },
+      {
+        "layer": "Concurrency",
+        "dataName": "Dealing with multiple things at once.",
+        "added": "-",
+        "removed": "-"
+      },
+      {
+        "layer": "Race Condition",
+        "dataName": "When multiple threads try to write to the same data at the same time, causing unexpected results.",
+        "added": "-",
+        "removed": "-"
+      },
+      {
+        "layer": "Mutex / Lock",
+        "dataName": "A mechanism to ensure only one thread can access a resource at a time.",
+        "added": "-",
+        "removed": "-"
+      }
+    ]
+  },
+  "footer": "INTERACTIVE DIAGRAM — MULTITHREADING CONCEPTS",
+  "steps": [
+    {
+      "tag": "START",
+      "title": "Single-Threaded Execution",
+      "desc": "In a single-threaded program, tasks are executed sequentially. Task B must wait for Task A to finish. If Task A is slow, the entire program freezes.",
+      "fields": [["Execution", "Sequential"], ["Threads", "1"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "MULTI",
+      "title": "Introducing Multiple Threads",
+      "desc": "By spawning multiple threads, tasks can be distributed. Thread 1 takes Task A, Thread 2 takes Task B. They can now execute concurrently.",
+      "fields": [["Execution", "Concurrent"], ["Threads", "3"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "SHARED",
+      "title": "The Shared Resource Problem",
+      "desc": "All threads in a process share the same memory. If Thread 1 and Thread 2 both try to update a shared counter at the exact same time, a 'Race Condition' occurs and the data gets corrupted.",
+      "fields": [["Problem", "Race Condition"], ["Result", "Data Corruption"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "LOCKED",
+      "title": "Solving it with a Mutex (Lock)",
+      "desc": "To prevent the race condition, we use a Mutex (Mutual Exclusion). Before updating the counter, a thread must acquire the lock. If another thread already has it, it must wait.",
+      "fields": [["Solution", "Mutex / Lock"], ["Result", "Data Safety"]],
+      "sizeUnit": null
+    }
+  ]
+}

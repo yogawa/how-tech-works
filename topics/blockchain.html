@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blockchain</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-dark: #09090b;
+  --bg-card: rgba(20, 20, 25, 0.8);
+  --text-main: #f0f0f5;
+  --text-muted: #8b8b9e;
+  
+  --color-green: #00ff66;
+  --color-gold: #ffaa00;
+  --color-red: #ff3366;
+  --color-blue: #00f0ff;
+
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+
+body {
+  background-color: var(--bg-dark);
+  background-image: radial-gradient(circle at 50% -20%, rgba(0, 255, 102, 0.15) 0%, transparent 70%);
+  color: var(--text-main);
+  font-family: 'Outfit', sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wrap { max-width: 1200px; width: 100%; }
+
+/* Header & Controls */
+header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; position: relative; z-index: 10; }
+.header-text { max-width: 650px; }
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--color-green);
+  text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: inline-block;
+  padding: 4px 10px; background: rgba(0, 255, 102, 0.1); border-radius: 4px;
+}
+h1 {
+  font-size: clamp(32px, 4vw, 48px); font-weight: 800; margin: 10px 0; line-height: 1.1;
+  background: linear-gradient(90deg, #fff, var(--text-muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+h1 span {
+  background: linear-gradient(90deg, var(--color-green), var(--color-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.lede { font-size: 17px; color: var(--text-muted); line-height: 1.6; font-weight: 300; }
+
+.lang-switch { display: flex; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 8px; overflow: hidden; }
+.lang-btn { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: transparent; border: none; color: var(--text-muted); padding: 8px 16px; cursor: pointer; transition: all 0.3s; }
+.lang-btn.active { background: rgba(255,255,255,0.1); color: #fff; box-shadow: inset 0 -2px 0 var(--color-green); }
+
+/* Tabs */
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+.tab { 
+  background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--text-muted); 
+  padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; 
+}
+.tab:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.tab.active { background: rgba(0,255,102,0.1); border-color: var(--color-green); color: var(--color-green); }
+
+/* Simulation Arena */
+.arena {
+  width: 100%; background: var(--glass-bg); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 40px; position: relative; backdrop-filter: blur(20px);
+  margin-bottom: 40px; min-height: 400px; display: flex; flex-direction: column;
+}
+
+.case-container { display: none; flex: 1; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+.case-container.active { display: flex; }
+
+/* Blocks */
+.chain { display: flex; gap: 40px; align-items: center; justify-content: center; width: 100%; position: relative; }
+.block {
+  background: var(--bg-card); border: 1px solid var(--color-green); border-radius: 12px;
+  width: 250px; padding: 20px; box-shadow: 0 5px 20px rgba(0,255,102,0.1);
+  transition: all 0.5s; position: relative; z-index: 2;
+}
+.block.invalid { border-color: var(--color-red); box-shadow: 0 5px 20px rgba(255,51,102,0.2); }
+.block.unmined { border-color: var(--color-gold); box-shadow: 0 5px 20px rgba(255,170,0,0.2); opacity: 0; transform: translateX(50px); }
+.block.unmined.show { opacity: 1; transform: translateX(0); }
+
+.b-header { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px; color: #fff; }
+.b-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; font-family: monospace; }
+.b-label { color: var(--text-muted); }
+.b-val { color: var(--color-blue); }
+.invalid .b-val { color: var(--color-red); }
+.unmined .b-val { color: var(--color-gold); }
+
+.b-data { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-bottom: 10px; min-height: 40px; }
+.hash-val { font-size: 10px; word-break: break-all; color: var(--color-green); }
+.invalid .hash-val { color: var(--color-red); }
+.unmined .hash-val { color: var(--text-muted); }
+
+/* Link arrows between blocks */
+.chain::before {
+  content: ''; position: absolute; top: 50%; left: 10%; right: 10%; height: 2px;
+  background: var(--color-green); z-index: 1; transform: translateY(-50%); transition: all 0.5s;
+}
+.chain.broken::before { background: var(--color-red); border-top: 2px dashed var(--bg-dark); }
+.chain.unlinked::before { right: 50%; }
+
+/* Tamper Button */
+#tamperBtn {
+  position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+  background: var(--color-red); color: #fff; border: none; padding: 6px 12px;
+  border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px;
+  box-shadow: 0 5px 15px rgba(255,51,102,0.4); opacity: 0; pointer-events: none; transition: all 0.3s;
+}
+#tamperBtn.show { opacity: 1; pointer-events: auto; }
+#tamperBtn:hover { transform: translateX(-50%) scale(1.1); }
+
+/* Nodes (Case 3) */
+.nodes-grid { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+.node-row { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px; }
+.node-title { font-family: 'JetBrains Mono', monospace; font-weight: bold; width: 100px; color: var(--color-blue); }
+.mini-chain { display: flex; gap: 10px; flex: 1; }
+.mini-block { width: 60px; height: 40px; background: rgba(0,255,102,0.1); border: 1px solid var(--color-green); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 10px; color: var(--color-green); transition: all 0.5s; }
+.mini-block.fork { background: rgba(255,170,0,0.1); border-color: var(--color-gold); color: var(--color-gold); }
+.mini-block.dropped { opacity: 0.2; border-color: var(--color-red); background: rgba(255,51,102,0.1); color: var(--color-red); }
+
+/* Mining Spinner */
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: var(--color-gold); animation: spin 1s ease-in-out infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Player Controls */
+.controls { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: auto; padding-top: 40px; }
+button.control-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 30px; cursor: pointer; transition: all 0.2s; }
+button.control-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
+button.control-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+button.control-btn.primary { background: linear-gradient(45deg, var(--color-green), var(--color-blue)); border: none; color: #000; box-shadow: 0 5px 15px rgba(0,255,102,0.3); }
+
+.timeline { display: flex; gap: 8px; margin: 0 20px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: all 0.3s; }
+.dot.done { background: var(--color-blue); }
+.dot.now { background: var(--color-green); box-shadow: 0 0 10px var(--color-green); transform: scale(1.3); }
+
+/* Story Panel */
+.story-panel { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 30px; backdrop-filter: blur(10px); }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; margin-bottom: 15px; background: rgba(255,255,255,0.1); color: #fff; }
+.story-title { font-size: 24px; font-weight: 700; margin: 0 0 10px; color: #fff; }
+.story-desc { font-size: 16px; color: var(--text-muted); line-height: 1.6; margin: 0 0 25px; }
+
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+.data-card { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; }
+.data-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+.data-val { font-size: 15px; font-weight: 600; color: var(--color-green); }
+
+.loading { position: fixed; inset: 0; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; color: var(--color-green); z-index: 100; transition: opacity 0.5s; }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loadingNote">SYNCING LEDGER...</div>
+
+<div class="wrap" id="wrap" style="opacity:0; transition: opacity 1s;">
+  <header>
+    <div class="header-text">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="h1"></h1>
+      <p class="lede" id="lede"></p>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="setCase('case1')" id="tab-case1"></div>
+    <div class="tab" onclick="setCase('case2')" id="tab-case2"></div>
+    <div class="tab" onclick="setCase('case3')" id="tab-case3"></div>
+  </div>
+
+  <div class="arena">
+    <!-- CASE 1 -->
+    <div class="case-container" id="c-case1">
+      <div class="chain unlinked" id="chain-c1">
+        <div class="block">
+          <div class="b-header">Block 0 (Genesis)</div>
+          <div class="b-row"><span class="b-label">Nonce</span><span class="b-val">38291</span></div>
+          <div class="b-data">Satoshi sends 50 BTC</div>
+          <div class="b-row"><span class="b-label">Prev Hash</span><span class="hash-val">0000000000000000</span></div>
+          <div class="b-row"><span class="b-label">Hash</span><span class="hash-val">0000x8f9a2...</span></div>
+        </div>
+        <div class="block unmined" id="c1-b1">
+          <div class="b-header">Block 1</div>
+          <div class="b-row"><span class="b-label">Nonce</span><span class="b-val" id="c1-nonce">?</span></div>
+          <div class="b-data">Alice pays Bob $50</div>
+          <div class="b-row"><span class="b-label">Prev Hash</span><span class="hash-val" id="c1-prev">?</span></div>
+          <div class="b-row"><span class="b-label">Hash</span><span class="hash-val" id="c1-hash">Uncalculated</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CASE 2 -->
+    <div class="case-container" id="c-case2">
+      <div class="chain" id="chain-c2">
+        <div class="block" id="c2-b1">
+          <div class="b-header">Block 1</div>
+          <div class="b-row"><span class="b-label">Nonce</span><span class="b-val">1204</span></div>
+          <div class="b-data" id="c2-data">Alice sends $10</div>
+          <div class="b-row"><span class="b-label">Prev Hash</span><span class="hash-val">0000x8f9a2...</span></div>
+          <div class="b-row"><span class="b-label">Hash</span><span class="hash-val" id="c2-h1">00001a4bc...</span></div>
+          <button id="tamperBtn">TAMPER</button>
+        </div>
+        <div class="block" id="c2-b2">
+          <div class="b-header">Block 2</div>
+          <div class="b-row"><span class="b-label">Nonce</span><span class="b-val">8492</span></div>
+          <div class="b-data">Bob sends $5</div>
+          <div class="b-row"><span class="b-label">Prev Hash</span><span class="hash-val" id="c2-p2">00001a4bc...</span></div>
+          <div class="b-row"><span class="b-label">Hash</span><span class="hash-val" id="c2-h2">00008f7ce...</span></div>
+        </div>
+        <div class="block" id="c2-b3">
+          <div class="b-header">Block 3</div>
+          <div class="b-row"><span class="b-label">Nonce</span><span class="b-val">5931</span></div>
+          <div class="b-data">Charlie sends $2</div>
+          <div class="b-row"><span class="b-label">Prev Hash</span><span class="hash-val" id="c2-p3">00008f7ce...</span></div>
+          <div class="b-row"><span class="b-label">Hash</span><span class="hash-val" id="c2-h3">00003b21a...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CASE 3 -->
+    <div class="case-container" id="c-case3">
+      <div class="nodes-grid">
+        <div class="node-row" id="n-a">
+          <div class="node-title">Node A</div>
+          <div class="mini-chain" id="mc-a">
+            <div class="mini-block">B1</div><div class="mini-block">B2</div>
+          </div>
+        </div>
+        <div class="node-row" id="n-b">
+          <div class="node-title">Node B</div>
+          <div class="mini-chain" id="mc-b">
+            <div class="mini-block">B1</div><div class="mini-block">B2</div>
+          </div>
+        </div>
+        <div class="node-row" id="n-c">
+          <div class="node-title">Node C</div>
+          <div class="mini-chain" id="mc-c">
+            <div class="mini-block">B1</div><div class="mini-block">B2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="control-btn" id="btnPrev"></button>
+      <div class="timeline" id="stepTrack"></div>
+      <button class="control-btn primary" id="btnNext"></button>
+      <button class="control-btn" id="btnReset" style="margin-left: 20px;"></button>
+    </div>
+  </div>
+
+  <div class="story-panel">
+    <span class="tag" id="tag"></span>
+    <h2 class="story-title" id="storyTitle"></h2>
+    <p class="story-desc" id="storyDesc"></p>
+    <div class="data-grid" id="dataGrid"></div>
+  </div>
+</div>
+
+<script>
+const LANGS = ['id', 'en'];
+let currentLang = new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('lang') || 'en';
+let i18n = null;
+let currentCase = 'case1';
+let currentStep = 0;
+
+async function loadData() {
+  const res = await fetch(`i18n/blockchain.${currentLang}.json`);
+  i18n = await res.json();
+}
+
+function updateStaticUI() {
+  document.documentElement.lang = currentLang;
+  document.title = i18n.documentTitle;
+  document.getElementById('eyebrow').textContent = i18n.eyebrow;
+  document.getElementById('h1').innerHTML = i18n.h1Prefix + `<span>${i18n.h1Highlight}</span>` + i18n.h1Suffix;
+  document.getElementById('lede').textContent = i18n.lede;
+  
+  document.getElementById('tab-case1').textContent = i18n.cases.case1;
+  document.getElementById('tab-case2').textContent = i18n.cases.case2;
+  document.getElementById('tab-case3').textContent = i18n.cases.case3;
+
+  document.getElementById('btnPrev').innerHTML = i18n.controls.prev;
+  document.getElementById('btnReset').innerHTML = i18n.controls.reset;
+  document.getElementById('tamperBtn').textContent = i18n.controls.tamperBtn;
+
+  const ls = document.getElementById('langSwitch');
+  ls.innerHTML = '';
+  LANGS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'lang-btn' + (l === currentLang ? ' active' : '');
+    b.innerText = l.toUpperCase();
+    b.onclick = () => setLang(l);
+    ls.appendChild(b);
+  });
+}
+
+function setCase(c) {
+  currentCase = c;
+  currentStep = 0;
+  
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${c}`).classList.add('active');
+  
+  document.querySelectorAll('.case-container').forEach(cc => cc.classList.remove('active'));
+  document.getElementById(`c-${c}`).classList.add('active');
+  
+  // Hard resets per case
+  if(c==='case1') resetCase1();
+  if(c==='case2') resetCase2();
+  if(c==='case3') resetCase3();
+
+  renderStep();
+}
+
+// Visual resets
+function resetCase1() {
+  document.getElementById('c1-b1').className = 'block unmined';
+  document.getElementById('chain-c1').className = 'chain unlinked';
+  document.getElementById('c1-nonce').innerHTML = '?';
+  document.getElementById('c1-prev').innerHTML = '?';
+  document.getElementById('c1-hash').innerHTML = 'Uncalculated';
+}
+function resetCase2() {
+  document.getElementById('c2-b1').className = 'block';
+  document.getElementById('c2-b2').className = 'block';
+  document.getElementById('c2-b3').className = 'block';
+  document.getElementById('chain-c2').className = 'chain';
+  document.getElementById('c2-data').textContent = "Alice sends $10";
+  document.getElementById('c2-h1').textContent = "00001a4bc...";
+  document.getElementById('c2-p2').textContent = "00001a4bc...";
+  document.getElementById('tamperBtn').classList.remove('show');
+}
+function resetCase3() {
+  const base = `<div class="mini-block">B1</div><div class="mini-block">B2</div>`;
+  document.getElementById('mc-a').innerHTML = base;
+  document.getElementById('mc-b').innerHTML = base;
+  document.getElementById('mc-c').innerHTML = base;
+}
+
+function renderStep() {
+  const steps = i18n.steps[currentCase];
+  const data = steps[currentStep];
+
+  // Specific case logics
+  if (currentCase === 'case1') {
+    const b1 = document.getElementById('c1-b1');
+    if (currentStep === 0) { resetCase1(); }
+    if (currentStep === 1) { b1.className = 'block unmined show'; }
+    if (currentStep === 2) { 
+      b1.className = 'block unmined show'; 
+      document.getElementById('c1-prev').innerHTML = '0000x8f9a2...';
+      document.getElementById('c1-nonce').innerHTML = '<div class="spinner"></div>';
+    }
+    if (currentStep === 3) {
+      b1.className = 'block';
+      document.getElementById('chain-c1').className = 'chain';
+      document.getElementById('c1-nonce').innerHTML = '5819';
+      document.getElementById('c1-hash').innerHTML = '00009c2a1...';
+    }
+  }
+  
+  if (currentCase === 'case2') {
+    if (currentStep === 0) { resetCase2(); }
+    if (currentStep === 1) { 
+      document.getElementById('tamperBtn').classList.add('show'); 
+    }
+    if (currentStep === 2) {
+      document.getElementById('tamperBtn').classList.remove('show');
+      document.getElementById('c2-data').textContent = "Alice sends $1000";
+      document.getElementById('c2-h1').textContent = "a3f9104bc...";
+      document.getElementById('c2-b2').className = 'block invalid';
+      document.getElementById('c2-b3').className = 'block invalid';
+      document.getElementById('chain-c2').className = 'chain broken';
+    }
+  }
+
+  if (currentCase === 'case3') {
+    const mca = document.getElementById('mc-a');
+    const mcb = document.getElementById('mc-b');
+    const mcc = document.getElementById('mc-c');
+    
+    if(currentStep === 0) resetCase3();
+    if(currentStep === 1) {
+      resetCase3();
+      mca.innerHTML += `<div class="mini-block fork">B3X</div>`;
+      mcc.innerHTML += `<div class="mini-block fork">B3Y</div>`;
+    }
+    if(currentStep === 2) {
+      mca.innerHTML = `<div class="mini-block">B1</div><div class="mini-block">B2</div><div class="mini-block">B3X</div><div class="mini-block">B4</div>`;
+      mcc.innerHTML = `<div class="mini-block">B1</div><div class="mini-block">B2</div><div class="mini-block dropped">B3Y</div><div class="mini-block">B3X</div><div class="mini-block">B4</div>`;
+      mcb.innerHTML = `<div class="mini-block">B1</div><div class="mini-block">B2</div><div class="mini-block">B3X</div><div class="mini-block">B4</div>`;
+    }
+  }
+
+  // Update Panel
+  document.getElementById('tag').textContent = data.tag;
+  document.getElementById('storyTitle').textContent = data.title;
+  document.getElementById('storyDesc').textContent = data.desc;
+
+  const grid = document.getElementById('dataGrid');
+  grid.innerHTML = '';
+  data.fields.forEach(([lbl, val]) => {
+    grid.innerHTML += `<div class="data-card"><div class="data-label">${lbl}</div><div class="data-val">${val}</div></div>`;
+  });
+
+  // Track & Controls
+  const track = document.getElementById('stepTrack');
+  track.innerHTML = '';
+  for(let i=0; i<steps.length; i++){
+    let cls = 'dot';
+    if(i < currentStep) cls += ' done';
+    if(i === currentStep) cls += ' now';
+    track.innerHTML += `<div class="${cls}"></div>`;
+  }
+
+  document.getElementById('btnPrev').disabled = (currentStep === 0);
+  
+  const nextBtn = document.getElementById('btnNext');
+  // Disable next btn if case 2 step 1 (waiting for manual tamper)
+  if(currentCase === 'case2' && currentStep === 1) {
+    nextBtn.disabled = true;
+    nextBtn.innerHTML = "Action Required";
+  } else {
+    nextBtn.disabled = false;
+    nextBtn.innerHTML = (currentStep === steps.length - 1) ? i18n.controls.done : i18n.controls.next;
+  }
+}
+
+document.getElementById('tamperBtn').onclick = () => { if(currentStep === 1) { currentStep++; renderStep(); } };
+document.getElementById('btnNext').onclick = () => { const len = i18n.steps[currentCase].length; if(currentStep < len - 1) { currentStep++; renderStep(); } };
+document.getElementById('btnPrev').onclick = () => { if(currentStep > 0) { currentStep--; renderStep(); } };
+document.getElementById('btnReset').onclick = () => { currentStep = 0; renderStep(); };
+
+async function setLang(l) {
+  if (l === currentLang) return;
+  currentLang = l;
+  localStorage.setItem('lang', l);
+  const u = new URL(window.location);
+  u.searchParams.set('lang', l);
+  history.replaceState(null, '', u);
+  
+  await loadData();
+  updateStaticUI();
+  renderStep();
+  
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: 'howitworks:lang-change', lang: l }, '*');
+  }
+}
+
+async function init() {
+  await loadData();
+  updateStaticUI();
+  setCase('case1');
+  
+  document.getElementById('loadingNote').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loadingNote').style.display = 'none';
+    document.getElementById('wrap').style.opacity = '1';
+  }, 500);
+}
+
+init();
+</script>
+</body>
+</html>

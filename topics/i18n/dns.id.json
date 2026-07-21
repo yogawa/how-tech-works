@@ -1,0 +1,81 @@
+{
+  "documentTitle": "DNS: Buku Telepon Internet",
+  "eyebrow": "Jaringan & Internet",
+  "h1Prefix": "Bagaimana komputer ",
+  "h1Highlight": "saling menemukan nama",
+  "h1Suffix": ".",
+  "lede": "Komputer berkomunikasi menggunakan alamat IP, namun manusia lebih suka nama yang mudah dibaca seperti 'example.com'. Domain Name System (DNS) adalah buku telepon yang menerjemahkan keduanya. Setiap kali Anda mengunjungi sebuah situs web, terjadi sebuah pencarian tersembunyi yang sangat cepat melintasi dunia untuk menemukan alamatnya. Mari kita telusuri pencarian tersebut.",
+  "figCaption": "GAMBAR 03 — RECURSIVE DNS QUERY",
+  "controls": {
+    "prev": "&larr; Sebelumnya",
+    "next": "Langkah Selanjutnya &rarr;",
+    "reset": "Ulangi Dari Awal",
+    "done": "Selesai ✓",
+    "stepCounter": "Langkah {n} / {total}"
+  },
+  "legend": {
+    "title": "Referensi Cepat: Peran Server",
+    "sub": "Hierarki pada sistem DNS.",
+    "headers": ["Peran", "Deskripsi"],
+    "rows": [
+      {
+        "layer": "Browser / Klien",
+        "dataName": "Anda. Ingin mengunjungi 'example.com'."
+      },
+      {
+        "layer": "DNS Resolver",
+        "dataName": "Biasanya dijalankan oleh ISP Anda. Bertugas menanyakan ke server lain untuk menemukan IP."
+      },
+      {
+        "layer": "Root Server",
+        "dataName": "Puncak hierarki (.). Mengarahkan Resolver ke server TLD yang tepat."
+      },
+      {
+        "layer": "TLD Server",
+        "dataName": "Menangani Top Level Domain seperti .com, .org. Mengarahkan Resolver ke server khusus domain tersebut."
+      },
+      {
+        "layer": "Authoritative Server",
+        "dataName": "Bos terakhir. Menyimpan catatan (record) alamat IP yang sebenarnya untuk 'example.com'."
+      }
+    ]
+  },
+  "footer": "DIAGRAM INTERAKTIF — SIKLUS HIDUP KUERI DNS",
+  "steps": [
+    {
+      "tag": "MULAI",
+      "title": "Browser bertanya ke Resolver lokal",
+      "desc": "Anda mengetik 'example.com' di browser. Komputer bertanya ke DNS Resolver (biasanya dari penyedia internet Anda): 'Hai, apakah Anda tahu IP untuk example.com?'. Jika Resolver tidak memilikinya di cache, pencarian rekursif pun dimulai.",
+      "fields": [["Kueri", "Di mana example.com?"], ["Pemberhentian", "Resolver Lokal"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "LANGKAH 1",
+      "title": "Bertanya ke Root Server",
+      "desc": "Resolver pertama-tama bertanya ke Root Server global. Root tidak tahu IP pasti dari example.com, tapi dia tahu siapa yang menangani domain '.com'. Ia menjawab: 'Saya tidak tahu, tapi coba tanya TLD Server .com di IP ini.'",
+      "fields": [["Kueri", "Di mana example.com?"], ["Balasan", "Tanyakan ke TLD Server .com"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "LANGKAH 2",
+      "title": "Bertanya ke TLD Server",
+      "desc": "Resolver lalu mendatangi TLD Server .com. TLD Server berkata: 'Saya tidak tahu IP pastinya, tapi saya tahu Authoritative Name Server yang mengurus example.com. Coba tanya ke mereka di IP ini.'",
+      "fields": [["Kueri", "Di mana example.com?"], ["Balasan", "Tanyakan ke Authoritative Server"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "LANGKAH 3",
+      "title": "Bertanya ke Authoritative Server",
+      "desc": "Resolver akhirnya menghubungi Authoritative Name Server. Server ini adalah sumber kebenaran utama dari domain tersebut. Ia memeriksa catatannya dan dengan bangga menjawab: 'Ya, example.com ada di 192.0.2.1!'",
+      "fields": [["Kueri", "Di mana example.com?"], ["Balasan", "Ada di 192.0.2.1 (A Record)"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "SELESAI",
+      "title": "Disimpan di Cache dan Dikirimkan",
+      "desc": "Resolver menyimpan (caching) alamat IP tersebut agar tidak perlu melakukan seluruh tarian panjang ini lagi dalam waktu dekat. Ia kemudian memberikan IP tersebut ke Browser Anda, yang akhirnya membuat koneksi HTTP asli ke situs web tersebut.",
+      "fields": [["Hasil Akhir", "192.0.2.1"], ["Tindakan", "Disimpan di Cache & Dikembalikan ke Browser"]],
+      "sizeUnit": null
+    }
+  ]
+}

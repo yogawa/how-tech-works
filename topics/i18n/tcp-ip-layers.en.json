@@ -1,0 +1,132 @@
+{
+  "documentTitle": "A Packet's Journey: TCP/IP Point to Point",
+  "eyebrow": "How Networks Work",
+  "h1Prefix": "Every packet is a ",
+  "h1Highlight": "letter wrapped in envelopes",
+  "h1Suffix": ".",
+  "lede": "When data travels from one host to another, it doesn't travel naked. Each TCP/IP layer wraps it in an \"envelope\" containing addresses and rules — then at the end of the journey, those envelopes are opened one by one, in exactly the reverse order they were put on. Press the steps below to follow a single packet, from the sending application to the receiving one.",
+  "figCaption": "FIG. 01 — TRANSMISSION PATH",
+  "nodes": {
+    "a": { "label": "Host A", "sub": "Sender" },
+    "r": { "label": "Router", "sub": "Network hop" },
+    "b": { "label": "Host B", "sub": "Receiver" }
+  },
+  "controls": {
+    "prev": "&larr; Previous",
+    "next": "Next Step &rarr;",
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓",
+    "stepCounter": "Step {n} / {total}"
+  },
+  "stackCardTag": "CURRENT PACKET SHAPE",
+  "stackLayers": {
+    "link": { "name": "Link (Ethernet)", "note": "src/dst MAC + FCS" },
+    "internet": { "name": "Internet (IP)", "note": "src/dst IP, TTL" },
+    "transport": { "name": "Transport (TCP)", "note": "port, seq/ack" },
+    "app": { "name": "Application", "note": "original payload" }
+  },
+  "legend": {
+    "title": "Quick reference: what's added &amp; dropped per layer",
+    "sub": "General rule: moving down (encapsulation) = adding a header. Moving up (decapsulation) = dropping a header. The data unit's name changes at every layer.",
+    "headers": ["Layer", "Data name", "Added going down", "Dropped going up"],
+    "rows": [
+      {
+        "layer": "Application",
+        "dataName": "Data / Message",
+        "added": "— (this is where data originates, e.g. an HTTP request)",
+        "removed": "No header is dropped; data is handed straight to the application"
+      },
+      {
+        "layer": "Transport (TCP/UDP)",
+        "dataName": "Segment (TCP) / Datagram (UDP)",
+        "added": "Source &amp; destination port, sequence &amp; ack number, flags, window size, checksum (±20 bytes)",
+        "removed": "TCP header is dropped once the sequence number &amp; checksum are verified; the port is used to route to the destination application"
+      },
+      {
+        "layer": "Internet (IP)",
+        "dataName": "Packet",
+        "added": "Source &amp; destination IP, TTL, protocol, header checksum (±20 bytes)",
+        "removed": "IP header is dropped once TTL &amp; checksum are checked, confirming the destination is indeed this host"
+      },
+      {
+        "layer": "Link (Ethernet/Wi-Fi)",
+        "dataName": "Frame",
+        "added": "Source &amp; destination MAC, EtherType, and an FCS trailer for error detection (±18 bytes)",
+        "removed": "Header &amp; trailer are dropped at every hop — <b>this is the only layer routers strip and reattach</b>"
+      }
+    ]
+  },
+  "footer": "INTERACTIVE DIAGRAM — TCP/IP ENCAPSULATION &amp; DECAPSULATION",
+  "steps": [
+    {
+      "tag": "START",
+      "title": "The application creates data",
+      "desc": "Everything begins with an application on Host A, say a browser building an HTTP request. At this stage the data is still plain — no addresses yet, no delivery rules, just the message content itself.",
+      "fields": [["Example content", "GET /index.html HTTP/1.1"], ["Layer", "Application"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "+ ADDED",
+      "title": "Transport adds a TCP Header → becomes a Segment",
+      "desc": "The Transport layer wraps the data with a TCP header. This header carries port numbers so it can later be routed to the right application on the receiving end, plus a sequence number so the data can be reassembled and verified as complete.",
+      "fields": [["Source port", "e.g. 51422"], ["Destination port", "e.g. 80 (HTTP)"], ["Sequence number", "for ordering data chunks"], ["Checksum", "detects data corruption"]],
+      "sizeUnit": "bytes of TCP header (minimum)"
+    },
+    {
+      "tag": "+ ADDED",
+      "title": "Internet adds an IP Header → becomes a Packet",
+      "desc": "The Internet layer adds the source and destination IP addresses — this is what lets the data know where to go globally, even across many networks. A TTL is also inserted to stop the packet from looping forever.",
+      "fields": [["Source IP", "e.g. 192.168.1.10"], ["Destination IP", "e.g. 203.0.113.55"], ["TTL (Time To Live)", "decreases by 1 at every router"], ["Protocol", "marks the payload as TCP"]],
+      "sizeUnit": "bytes of IP header (minimum)"
+    },
+    {
+      "tag": "+ ADDED",
+      "title": "Link adds an Ethernet Header + Trailer → becomes a Frame",
+      "desc": "The bottom-most layer adds MAC addresses — physical addresses for the next hop only, not the final destination. An FCS trailer is also appended at the end of the frame to detect if data got corrupted during physical transmission.",
+      "fields": [["Source MAC", "physical address of Host A"], ["Destination MAC", "physical address of the next hop (Router)"], ["EtherType", "marks the payload as an IP packet"], ["FCS (trailer)", "checksum at the end of the frame"]],
+      "sizeUnit": "bytes of Ethernet header & trailer"
+    },
+    {
+      "tag": "TRANSMISSION",
+      "title": "The frame is sent as bits over the physical medium",
+      "desc": "The now-complete frame is turned into electrical signals, light, or radio waves and flows along the cable or through the air toward the Router. At this point, the entire wrapper (TCP + IP + Ethernet) travels along with the data.",
+      "fields": [["Data form", "a stream of 0s and 1s"], ["Medium", "copper cable / fiber optic / Wi-Fi radio"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "− DROPPED, THEN REATTACHED",
+      "title": "The Router unwraps Ethernet, then reattaches it",
+      "desc": "The Router only cares about the Link and Internet layers. It strips the old Ethernet header, checks the IP header to know where to forward the packet, decrements the TTL by 1, then attaches a NEW Ethernet header with the MAC address for the next hop.",
+      "fields": [["Dropped", "old Ethernet header & trailer"], ["Checked & changed", "TTL decremented by 1 in the IP header"], ["Reattached", "new Ethernet header toward Host B"]],
+      "sizeUnit": "total bytes unchanged, MAC contents swapped"
+    },
+    {
+      "tag": "TRANSMISSION",
+      "title": "The new frame flows toward Host B",
+      "desc": "With the new MAC address attached, the frame continues its journey as bits toward Host B. The IP and TCP headers inside are left completely untouched — both are end-to-end and stay intact from the original sender all the way to the final receiver.",
+      "fields": [["IP & TCP header", "unchanged since first created"], ["Ethernet header", "new version from the Router"]],
+      "sizeUnit": null
+    },
+    {
+      "tag": "− DROPPED",
+      "title": "Host B unwraps the Ethernet Header",
+      "desc": "Host B receives the frame, verifies the FCS to make sure nothing was corrupted in transit, then drops the Ethernet header and trailer since its job is done: delivering the bits to the right device.",
+      "fields": [["Checked", "FCS trailer to verify data integrity"], ["Dropped", "Ethernet MAC header & trailer"]],
+      "sizeUnit": "bytes removed"
+    },
+    {
+      "tag": "− DROPPED",
+      "title": "Host B unwraps the IP Header",
+      "desc": "The Internet layer checks whether the destination IP address really belongs to this host, verifies the header checksum, then drops the IP header since the job of cross-network addressing is done.",
+      "fields": [["Checked", "does the destination IP match this host?"], ["Dropped", "full IP header"]],
+      "sizeUnit": "bytes removed"
+    },
+    {
+      "tag": "DONE",
+      "title": "Host B unwraps the TCP Header — data reaches the application",
+      "desc": "The Transport layer uses the port number to deliver the data to the right application, verifies the sequence number so the data is assembled correctly, then drops the TCP header. What's left is identical to the original data created by the application on Host A.",
+      "fields": [["Checked", "destination port → routed to the application"], ["Dropped", "full TCP header"], ["Final result", "data identical to the sender's"]],
+      "sizeUnit": "bytes removed"
+    }
+  ]
+}
