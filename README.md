@@ -35,12 +35,12 @@ For a hosted version, enable **GitHub Pages** in the repository settings (Settin
     ├── dns.html                  # How domain names get resolved into IP addresses
     ├── asymmetric-encryption.html # Public/private key pairs — encryption & digital signatures
     ├── blockchain.html           # Hash-linked blocks and network consensus
-    ├── multithreading.html       # Concurrent threads, race conditions, and mutex locks
+    ├── multithreading.html       # 4 scenarios — race condition, mutex lock, deadlock, thread pool
     ├── docker-vs-vm.html         # Containers vs. traditional virtual machines
     ├── git.html                  # Git: 5 scenarios — commit workflow, branching, conflicts, reset vs revert, rebase vs merge
     ├── https-tls.html            # HTTPS/TLS: 4 scenarios — handshake, certificate chain of trust, TLS 1.2 vs 1.3, MITM attack
     ├── event-driven-architecture.html # EDA: 4 scenarios — pub/sub, event queues, choreography vs orchestration, resilience
-    ├── llm.html                    # LLM: tokenization, embedding, self-attention, and token generation
+    ├── llm.html                   # 5 scenarios — inference pipeline, generation loop, training, context window, hallucination
     ├── aot-vs-jit.html            # AOT vs JIT: compile pipelines, startup/warm-up, adaptive optimization
     └── i18n/                     # Per-topic content translations, one file per language
         ├── tcp-ip-layers.id.json / .en.json
@@ -73,12 +73,12 @@ For a hosted version, enable **GitHub Pages** in the repository settings (Settin
 - [x] DNS — how domain names get translated into IP addresses
 - [x] Asymmetric encryption — public/private key pairs, used both for encrypting secrets and for digital signatures
 - [x] Blockchain — hash-linked blocks and network consensus
-- [x] Multithreading — concurrent threads, race conditions, and how a mutex lock prevents them
+- [x] Multithreading — four scenarios: a race condition, a mutex lock fix, a deadlock, and why real programs use a thread pool
 - [x] Docker/containers vs. virtual machines
 - [x] Git — five scenarios: basic commit workflow, branching & merging, merge conflicts, reset vs. revert, and rebase vs. merge
 - [x] HTTPS/TLS — four scenarios: the full TLS handshake, the certificate chain of trust, TLS 1.2 vs. 1.3, and a man-in-the-middle attack simulation
 - [x] Event-Driven Architecture — four scenarios: the basic publish/subscribe pattern, event queues for async processing, choreography vs. orchestration, and resilience to partial failure
-- [x] LLM — how large language models process language: tokenization, embedding, self-attention, and token generation
+- [x] LLM — five scenarios: the inference pipeline, the autoregressive generation loop, training, the context window limit, and hallucination
 - [x] AOT vs. JIT compilers — four scenarios: the AOT pipeline, the JIT pipeline, startup time & warm-up, and adaptive optimization
 
 Every topic from the original backlog is now covered — new topic ideas and contributions are still very welcome.

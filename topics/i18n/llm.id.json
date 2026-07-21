@@ -1,10 +1,17 @@
 {
-  "documentTitle": "LLM: Cara Kerja Large Language Model",
+  "documentTitle": "LLM: Inferensi, Training, Context Window & Halusinasi",
   "eyebrow": "AI & Pembelajaran Mesin",
   "h1Prefix": "Bagaimana LLM ",
   "h1Highlight": "memproses bahasa",
   "h1Suffix": ".",
-  "lede": "Large Language Model (LLM) seperti GPT dan Claude belajar memahami dan menghasilkan teks dengan memproses miliaran kata. Mari kita telusuri perjalanan sebuah prompt dari teks mentah menjadi respons yang dihasilkan model — langkah demi langkah.",
+  "lede": "Large Language Model (LLM) seperti GPT dan Claude belajar memahami dan menghasilkan teks dengan memproses miliaran kata. Coba lima skenario di bawah ini — alur inferensi dari prompt sampai respons, bagaimana token demi token dihasilkan lewat autoregressive loop, bagaimana model 'belajar' lewat training, kenapa ada batas context window, sampai kenapa LLM kadang bisa 'berhalusinasi'.",
+  "cases": {
+    "pipeline": "🧩 Alur Inferensi",
+    "autoregressive": "🔁 Generation Loop",
+    "training": "🎓 Training",
+    "context": "📏 Context Window",
+    "hallucination": "👻 Halusinasi"
+  },
   "pipelineLabel": "PIPELINE INFERENSI LLM",
   "flowNodes": {
     "input": "Input",
@@ -22,8 +29,8 @@
   },
   "controls": {
     "prev": "&larr; Sebelumnya",
-    "next": "Langkah Selanjutnya &rarr;",
-    "reset": "Ulangi Dari Awal",
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
     "done": "Selesai ✓"
   },
   "tokenExample": [
@@ -45,36 +52,220 @@
     {"pair": "LLM → ?", "meaning": "Tanda tanya menentukan jenis respons"}
   ],
   "predTokens": ["LLM", "adalah", "singkatan", "dari", "Large", "Language", "Model"],
-  "steps": [
-    {
-      "tag": "MASUKAN",
-      "title": "Pengguna mengetik prompt",
-      "desc": "Anda mengetik sebuah pertanyaan atau perintah ke dalam chatbot. Teks mentah ini adalah titik awal — model belum bisa memahami kata-kata secara langsung, ia memerlukan representasi numerik terlebih dahulu.",
-      "fields": [["Prompt", "Apa itu LLM?"], ["Panjang", "11 karakter"], ["Bahasa", "Indonesia"]]
-    },
-    {
-      "tag": "LANGKAH 1",
-      "title": "Tokenisasi: Memecah teks menjadi token",
-      "desc": "Teks dipecah menjadi potongan-potongan kecil yang disebut 'token'. Setiap token merepresentasikan satu kata, sub-kata, atau karakter. Model memiliki vocabulary tetap — setiap token yang dikenali akan dicocokkan dengan nomor unik (token ID). Kata yang tidak dikenal akan dipecah lebih kecil.",
-      "fields": [["Input", "Apa itu LLM?"], ["Jumlah Token", "4 token"], ["Metode", "BPE (Byte-Pair Encoding)"]]
-    },
-    {
-      "tag": "LANGKAH 2",
-      "title": "Embedding: Mengubah token menjadi vektor",
-      "desc": "Setiap token ID dikonversi menjadi vektor numerik berdimensi tinggi (misalnya 4096 dimensi). Vektor ini menangkap makna semantik dari token — kata dengan makna serupa akan memiliki vektor yang dekat satu sama lain dalam ruang vektor.",
-      "fields": [["Dimensi Vektor", "4096"], ["Ruang Memori", "~16 KB per token"], ["Metode", "Lookup Table + Positional Encoding"]]
-    },
-    {
-      "tag": "LANGKAH 3",
-      "title": "Self-Attention: Memahami hubungan antar token",
-      "desc": "Inilah inti dari arsitektur Transformer. Setiap token 'memperhatikan' token lain untuk memahami konteks. Misalnya, token 'itu' memperhatikan 'LLM' untuk memahami ke mana 'itu' merujuk. Mekanisme Query-Key-Value menghitung skor relevansi antar semua pasangan token secara paralel.",
-      "fields": [["Mekanisme", "Scaled Dot-Product Attention"], ["Head", "32 attention heads"], ["Kompleksitas", "O(n²) terhadap jumlah token"]]
-    },
-    {
-      "tag": "LANGKAH 4",
-      "title": "Dekoder: Menghasilkan token prediksi",
-      "desc": "Setelah melalui banyak layer Transformer, model menghasilkan distribusi probabilitas atas seluruh vocabulary. Token dengan probabilitas tertinggi (atau yang dipilih berdasarkan strategi sampling) menjadi kata berikutnya dalam respons. Proses ini diulang token demi token hingga respons selesai.",
-      "fields": [["Output", "LLM adalah singkatan dari Large Language Model"], ["Token dihasilkan", "7 token"], ["Strategi", "Greedy / Top-p Sampling"]]
-    }
-  ]
+  "steps": {
+    "pipeline": [
+      {
+        "tag": "MASUKAN",
+        "title": "Pengguna mengetik prompt",
+        "desc": "Anda mengetik sebuah pertanyaan atau perintah ke dalam chatbot. Teks mentah ini adalah titik awal — model belum bisa memahami kata-kata secara langsung, ia memerlukan representasi numerik terlebih dahulu.",
+        "fields": [["Prompt", "Apa itu LLM?"], ["Panjang", "11 karakter"], ["Bahasa", "Indonesia"]]
+      },
+      {
+        "tag": "LANGKAH 1",
+        "title": "Tokenisasi: Memecah teks menjadi token",
+        "desc": "Teks dipecah menjadi potongan-potongan kecil yang disebut 'token'. Setiap token merepresentasikan satu kata, sub-kata, atau karakter. Model memiliki vocabulary tetap — setiap token yang dikenali akan dicocokkan dengan nomor unik (token ID). Kata yang tidak dikenal akan dipecah lebih kecil.",
+        "fields": [["Input", "Apa itu LLM?"], ["Jumlah Token", "4 token"], ["Metode", "BPE (Byte-Pair Encoding)"]]
+      },
+      {
+        "tag": "LANGKAH 2",
+        "title": "Embedding: Mengubah token menjadi vektor",
+        "desc": "Setiap token ID dikonversi menjadi vektor numerik berdimensi tinggi (misalnya 4096 dimensi). Vektor ini menangkap makna semantik dari token — kata dengan makna serupa akan memiliki vektor yang dekat satu sama lain dalam ruang vektor.",
+        "fields": [["Dimensi Vektor", "4096"], ["Ruang Memori", "~16 KB per token"], ["Metode", "Lookup Table + Positional Encoding"]]
+      },
+      {
+        "tag": "LANGKAH 3",
+        "title": "Self-Attention: Memahami hubungan antar token",
+        "desc": "Inilah inti dari arsitektur Transformer. Setiap token 'memperhatikan' token lain untuk memahami konteks. Misalnya, token 'itu' memperhatikan 'LLM' untuk memahami ke mana 'itu' merujuk. Mekanisme Query-Key-Value menghitung skor relevansi antar semua pasangan token secara paralel.",
+        "fields": [["Mekanisme", "Scaled Dot-Product Attention"], ["Head", "32 attention heads"], ["Kompleksitas", "O(n²) terhadap jumlah token"]]
+      },
+      {
+        "tag": "LANGKAH 4",
+        "title": "Dekoder: Menghasilkan token prediksi",
+        "desc": "Setelah melalui banyak layer Transformer, model menghasilkan distribusi probabilitas atas seluruh vocabulary. Token dengan probabilitas tertinggi (atau yang dipilih berdasarkan strategi sampling) menjadi kata berikutnya dalam respons. Proses ini diulang token demi token hingga respons selesai.",
+        "fields": [["Output", "LLM adalah singkatan dari Large Language Model"], ["Token dihasilkan", "7 token"], ["Strategi", "Greedy / Top-p Sampling"]]
+      }
+    ],
+    "autoregressive": [
+      {
+        "tag": "MULAI",
+        "title": "Model menghasilkan jawaban satu token pada satu waktu",
+        "desc": "Prompt awal: \"Ibu kota Indonesia adalah\". Berbeda dari kesan yang muncul di chatbot (seolah jawaban langsung utuh), model sebenarnya menghasilkan responsnya TOKEN DEMI TOKEN, bukan sekaligus.",
+        "generated": "Ibu kota Indonesia adalah",
+        "fields": [["Prompt", "\"Ibu kota Indonesia adalah\""], ["Cara menghasilkan", "satu token per langkah"]]
+      },
+      {
+        "tag": "PREDIKSI TOKEN 1",
+        "title": "Model menghitung probabilitas untuk semua kandidat token berikutnya",
+        "desc": "Dari seluruh vocabulary, model menghitung skor kemungkinan untuk tiap kandidat, lalu memilih salah satu — biasanya yang probabilitasnya tertinggi. Di sini \" Jakarta\" jelas menang telak.",
+        "generated": "Ibu kota Indonesia adalah",
+        "candidates": [{"tok": "Jakarta", "pct": 78}, {"tok": "Surabaya", "pct": 6}, {"tok": "kota", "pct": 4}, {"tok": "ini", "pct": 3}],
+        "fields": [["Token terpilih", "\" Jakarta\" (78%)"], ["Kandidat lain", "Surabaya, kota, ini"]]
+      },
+      {
+        "tag": "DITEMPEL KE INPUT",
+        "title": "Token yang baru dipilih ditempelkan kembali ke akhir teks",
+        "desc": "\"Jakarta\" ditambahkan ke akhir teks, menjadi input baru: \"Ibu kota Indonesia adalah Jakarta\". Model belum tahu ini sudah 'selesai' — ia akan memproses ulang seluruh teks (termasuk token barunya) untuk memprediksi token selanjutnya.",
+        "generated": "Ibu kota Indonesia adalah **Jakarta**",
+        "fields": [["Input baru", "\"Ibu kota Indonesia adalah Jakarta\""], ["Status", "belum dianggap selesai oleh model"]]
+      },
+      {
+        "tag": "PREDIKSI TOKEN 2 (LOOP)",
+        "title": "Siklus yang sama terulang dari input yang sudah lebih panjang",
+        "desc": "Dengan input yang sudah bertambah, model memprediksi lagi token berikutnya. Kali ini tanda titik \".\" menang telak, karena kalimatnya sudah terasa lengkap secara gramatikal.",
+        "generated": "Ibu kota Indonesia adalah Jakarta",
+        "candidates": [{"tok": ".", "pct": 71}, {"tok": ",", "pct": 12}, {"tok": " yang", "pct": 9}, {"tok": " dengan", "pct": 5}],
+        "fields": [["Token terpilih", "\".\" (71%)"], ["Prinsipnya", "sama persis seperti langkah sebelumnya"]]
+      },
+      {
+        "tag": "TERUS BERULANG SAMPAI SELESAI",
+        "title": "Siklus predict → tempel → predict lagi berlanjut token demi token",
+        "desc": "Proses ini berulang terus — setiap token baru ditempel ke input, lalu dipakai untuk memprediksi token selanjutnya — sampai model memprediksi token khusus 'akhir teks' (end-of-sequence), atau mencapai batas panjang maksimum.",
+        "generated": "Ibu kota Indonesia adalah Jakarta.",
+        "fields": [["Berhenti ketika", "token end-of-sequence terpilih, atau batas panjang tercapai"], ["Hasil akhir", "\"Ibu kota Indonesia adalah Jakarta.\""]]
+      },
+      {
+        "tag": "PERAN TEMPERATURE",
+        "title": "Parameter temperature mengatur seberapa berani model 'menyimpang'",
+        "desc": "Temperature rendah (mis. 0.2) membuat model hampir selalu memilih token paling mungkin — jawaban konsisten tapi cenderung monoton. Temperature tinggi (mis. 1.2) membuat token yang kurang mungkin punya peluang lebih besar terpilih — jawaban lebih bervariasi, tapi berisiko kurang koheren.",
+        "tempCompare": {
+          "low": [{"tok": "Jakarta", "pct": 92}, {"tok": "Surabaya", "pct": 3}, {"tok": "kota", "pct": 2}],
+          "high": [{"tok": "Jakarta", "pct": 45}, {"tok": "Surabaya", "pct": 22}, {"tok": "kota", "pct": 18}]
+        },
+        "fields": [["Temperature rendah", "konsisten, cenderung monoton"], ["Temperature tinggi", "variatif, risiko kurang koheren"]]
+      }
+    ],
+    "training": [
+      {
+        "tag": "MULAI",
+        "title": "Model dimulai dari bobot acak — belum tahu apa-apa soal bahasa",
+        "desc": "Sebelum bisa menjawab apa pun, model dimulai dengan jutaan hingga miliaran bobot (parameter) yang diisi angka ACAK. Ia akan 'belajar' dari triliunan kata teks — buku, artikel, kode, halaman web — lewat proses bernama pretraining.",
+        "fields": [["Kondisi awal", "bobot acak, tidak mengerti bahasa"], ["Sumber belajar", "triliunan kata dari teks publik"]]
+      },
+      {
+        "tag": "AMBIL SATU CONTOH",
+        "title": "Satu potongan kalimat diambil, kata terakhirnya disembunyikan",
+        "desc": "Dari korpus teks raksasa, diambil satu kalimat dengan kata terakhirnya disembunyikan. Model diminta menebak kata apa yang seharusnya mengisi bagian yang kosong itu.",
+        "corpus": "Kucing suka tidur di atas ___",
+        "fields": [["Kalimat sumber", "\"Kucing suka tidur di atas sofa\""], ["Yang disembunyikan", "kata terakhir"]]
+      },
+      {
+        "tag": "MODEL MENEBAK",
+        "title": "Dengan bobot yang masih acak, tebakan awal biasanya salah",
+        "desc": "Karena bobotnya belum terlatih sama sekali, tebakan pertama model kemungkinan besar tidak masuk akal — di contoh ini ia menebak 'mobil', padahal jelas bukan sesuatu yang biasa ditiduri kucing.",
+        "guess": "mobil",
+        "isCorrect": false,
+        "fields": [["Tebakan model", "\"mobil\""], ["Kualitas tebakan", "salah / tidak masuk akal"]]
+      },
+      {
+        "tag": "DIBANDINGKAN DENGAN JAWABAN ASLI",
+        "title": "Tebakan dibandingkan dengan kata asli yang memang ada di teks sumber",
+        "desc": "Kata asli di teks sumber adalah 'sofa'. Selisih antara tebakan model ('mobil') dan jawaban sebenarnya ('sofa') dihitung sebagai satu angka: loss. Semakin jauh tebakannya, semakin besar loss-nya.",
+        "guess": "mobil",
+        "correct": "sofa",
+        "loss": 82,
+        "fields": [["Jawaban sebenarnya", "\"sofa\""], ["Loss (semakin tinggi = semakin salah)", "tinggi"]]
+      },
+      {
+        "tag": "BOBOT DISESUAIKAN SEDIKIT",
+        "title": "Lewat backpropagation, jutaan bobot disesuaikan sedikit demi sedikit",
+        "desc": "Berdasarkan besarnya loss, algoritma backpropagation menghitung arah penyesuaian untuk SETIAP bobot di dalam model (bisa miliaran jumlahnya), lalu menggesernya sedikit ke arah yang membuat tebakan berikutnya untuk situasi serupa sedikit lebih mendekati jawaban benar.",
+        "weightsAdjusted": true,
+        "fields": [["Mekanisme", "backpropagation + gradient descent"], ["Besarnya perubahan tiap bobot", "sangat kecil, sedikit demi sedikit"]]
+      },
+      {
+        "tag": "DIULANG TRILIUNAN KALI",
+        "title": "Ambil contoh → tebak → bandingkan → sesuaikan, diulang triliunan kali",
+        "desc": "Siklus ini dijalankan berulang-ulang di jutaan contoh berbeda, di ribuan GPU sekaligus, selama berminggu-minggu hingga berbulan-bulan. Dari pengulangan sebanyak itulah pola bahasa 'muncul' tersimpan di dalam bobot model — tanpa ada satu manusia pun yang secara eksplisit memprogram aturan tata bahasanya.",
+        "fields": [["Skala pengulangan", "triliunan contoh, berminggu-minggu di ribuan GPU"], ["Hasil akhirnya", "bobot yang sudah 'paham' pola bahasa secara statistik"]]
+      }
+    ],
+    "context": [
+      {
+        "tag": "MULAI",
+        "title": "Setiap model punya batas context window",
+        "desc": "Context window adalah jumlah token maksimum — system prompt + seluruh riwayat percakapan + pesan baru — yang bisa 'dilihat' model sekaligus dalam satu kali pemrosesan. Misalnya 128.000 token.",
+        "usedPct": 5,
+        "maxTokens": "128.000 token",
+        "fields": [["Batas context window", "128.000 token (contoh)"], ["Termasuk di dalamnya", "system prompt + riwayat + pesan baru"]]
+      },
+      {
+        "tag": "PERCAKAPAN DIMULAI",
+        "title": "Percakapan baru memakai sedikit dari kapasitas total",
+        "desc": "Di awal percakapan, hanya sedikit token yang terpakai — masih banyak ruang tersisa di context window.",
+        "usedPct": 8,
+        "fields": [["Terpakai", "sekitar 8% dari kapasitas"], ["Sisa ruang", "masih sangat lega"]]
+      },
+      {
+        "tag": "PERCAKAPAN BERTAMBAH PANJANG",
+        "title": "Setiap pesan baru menambah beban — bukan cuma pesan terakhir",
+        "desc": "Semakin banyak pesan bolak-balik, semakin banyak token terpakai. Yang sering tidak disadari: SELURUH riwayat sebelumnya harus dikirim ulang setiap kali, karena model tidak benar-benar 'mengingat' apa pun di antara satu request dan request berikutnya.",
+        "usedPct": 45,
+        "fields": [["Terpakai", "sekitar 45% dari kapasitas"], ["Yang dikirim ulang", "seluruh riwayat, bukan cuma pesan baru"]]
+      },
+      {
+        "tag": "MENDEKATI BATAS",
+        "title": "Total token riwayat + pesan baru mendekati batas maksimum",
+        "desc": "Kalau percakapan terus berlanjut tanpa jeda, jumlah token akan segera melebihi kapasitas yang bisa diproses model sekaligus.",
+        "usedPct": 92,
+        "fields": [["Terpakai", "sekitar 92% dari kapasitas"], ["Peringatan", "hampir menyentuh batas maksimum"]]
+      },
+      {
+        "tag": "BATAS TERLAMPAUI ⚠",
+        "title": "Bagian riwayat paling awal dipotong supaya sisanya tetap muat",
+        "desc": "Begitu melebihi batas, strategi umum adalah memotong (atau meringkas) bagian riwayat yang paling awal, supaya total token kembali muat di bawah batas. Model secara harfiah TIDAK BISA LAGI melihat bagian yang sudah terpotong itu.",
+        "usedPct": 100,
+        "overflow": true,
+        "fields": [["Tindakan umum", "memotong/meringkas pesan paling awal"], ["Dampak", "bagian yang terpotong tidak lagi terlihat model"]]
+      },
+      {
+        "tag": "DAMPAKNYA: \"LUPA\" KONTEKS AWAL",
+        "title": "Model tampak 'lupa' — padahal informasinya memang tidak lagi dikirim",
+        "desc": "Kalau pengguna merujuk kembali ke sesuatu yang disebut jauh di awal percakapan yang sudah terpotong, model tidak akan tahu jawabannya — bukan karena ia 'pelupa', tapi karena bagian itu memang tidak lagi ada di antara token yang dikirim ke model.",
+        "usedPct": 70,
+        "fields": [["Terlihat seperti", "model lupa konteks awal"], ["Penyebab sebenarnya", "bagian itu sudah tidak dikirim ulang, bukan 'dilupakan'"]]
+      }
+    ],
+    "hallucination": [
+      {
+        "tag": "MULAI",
+        "title": "Pengguna menanyakan sesuatu yang spesifik dan tidak umum",
+        "desc": "Pengguna bertanya: \"Siapa penulis buku 'Sejarah Kopi Nusantara Jilid 3' dan tahun berapa terbit?\" — sebuah buku yang sebenarnya tidak benar-benar ada.",
+        "question": "Siapa penulis buku 'Sejarah Kopi Nusantara Jilid 3' dan tahun berapa terbit?",
+        "fields": [["Pertanyaan", "tentang buku yang tidak pernah ada"], ["Tantangannya", "model tetap diminta menjawab"]]
+      },
+      {
+        "tag": "TIDAK ADA \"MODE CEK FAKTA\"",
+        "title": "Model tidak punya basis data fakta yang bisa dicek satu per satu",
+        "desc": "LLM tidak menyimpan fakta seperti ensiklopedia yang bisa di-query. Yang ia miliki hanyalah pola statistik: token apa yang biasanya mengikuti token sebelumnya, dipelajari dari data training.",
+        "fields": [["Yang dimiliki model", "pola statistik bahasa, bukan basis data fakta"], ["Tidak dimiliki model", "mekanisme 'cek fakta' internal"]]
+      },
+      {
+        "tag": "TETAP MEMPREDIKSI TOKEN PALING MASUK AKAL",
+        "title": "Model tetap menjalankan mekanisme yang sama seperti biasa",
+        "desc": "Diminta menjawab, model tetap memprediksi token demi token yang PALING MUNGKIN secara pola bahasa — persis mekanisme yang sama dipakai untuk pertanyaan apa pun, benar atau tidak ada jawabannya sekalipun.",
+        "fields": [["Mekanisme yang dipakai", "sama persis seperti menjawab pertanyaan biasa"], ["Tidak ada perbedaan proses", "meski jawaban sebenarnya tidak diketahui model"]]
+      },
+      {
+        "tag": "HASILNYA: JAWABAN YANG DIKARANG ⚠",
+        "title": "Jawaban terdengar meyakinkan, lengkap, tapi dikarang",
+        "desc": "Model menghasilkan nama penulis dan tahun terbit yang terdengar masuk akal secara linguistik — formatnya benar, gayanya meyakinkan — padahal buku itu sendiri tidak pernah ada. Inilah yang disebut halusinasi.",
+        "answer": "Ditulis oleh Ahmad Wijaya, terbit tahun 2019 oleh Penerbit Nusantara Aksara.",
+        "isFake": true,
+        "fields": [["Jawaban yang dihasilkan", "terdengar spesifik & meyakinkan"], ["Faktanya", "seluruhnya dikarang, buku itu tidak ada"]]
+      },
+      {
+        "tag": "KENAPA TERDENGAR SANGAT PERCAYA DIRI",
+        "title": "Model tidak punya cara bawaan untuk bilang 'saya tidak yakin'",
+        "desc": "Secara default, model dilatih untuk selalu menghasilkan token berikutnya yang paling mungkin — bukan untuk mengukur dan mengungkapkan seberapa yakin ia terhadap jawabannya sendiri. Nada percaya diri itu bukan tanda kebenaran.",
+        "fields": [["Yang diukur model", "probabilitas token berikutnya"], ["Yang TIDAK diukur secara default", "tingkat keyakinan terhadap kebenaran faktual"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Cara umum menguranginya",
+        "desc": "Beberapa mitigasi yang umum dipakai: RAG (Retrieval-Augmented Generation) yang menyuntikkan sumber nyata ke dalam prompt sebelum model menjawab, menurunkan temperature, melatih model agar mau menjawab 'saya tidak tahu', dan selalu meminta sumber/verifikasi untuk klaim penting.",
+        "mitigations": ["RAG (sumber nyata disuntikkan ke prompt)", "Temperature lebih rendah", "Dilatih untuk mau bilang 'tidak tahu'", "Verifikasi sumber untuk klaim penting"],
+        "fields": [["Bukan solusi sempurna", "mengurangi, bukan menghilangkan risiko"], ["Prinsip aman", "selalu verifikasi klaim faktual penting"]]
+      }
+    ]
+  }
 }

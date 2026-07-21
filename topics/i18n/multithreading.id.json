@@ -1,78 +1,198 @@
 {
-  "documentTitle": "Multithreading: Menjalankan Tugas Bersamaan",
+  "documentTitle": "Multithreading: Race Condition, Mutex, Deadlock & Thread Pool",
   "eyebrow": "Sistem & OS",
-  "h1Prefix": "Sebuah program bisa memiliki ",
-  "h1Highlight": "banyak alur pemikiran",
+  "h1Prefix": "Satu program, ",
+  "h1Highlight": "banyak alur berjalan bersamaan",
   "h1Suffix": ".",
-  "lede": "Daripada mengeksekusi tugas satu per satu, program dapat membaginya menjadi beberapa 'thread' yang berjalan bersamaan. Ini mempercepat proses tetapi menimbulkan masalah baru ketika thread berbagi data yang sama. Mari kita lihat cara kerjanya dan cara mengatasi kekacauan tersebut dengan Lock/Mutex.",
-  "figCaption": "GAMBAR 01 — MULTITHREADING",
+  "lede": "Multithreading memungkinkan satu program menjalankan banyak alur eksekusi (thread) sekaligus, jauh lebih cepat daripada mengerjakannya satu per satu. Tapi begitu thread-thread itu berbagi data yang sama, masalah baru muncul. Coba empat skenario di bawah ini — dari race condition yang merusak data, mutex lock yang memperbaikinya, deadlock yang membuat program macet total, sampai kenapa program nyata memakai thread pool alih-alih membuat thread baru untuk setiap tugas.",
+  "cases": {
+    "race": "⚡ Race Condition",
+    "mutex": "🔒 Mutex Lock",
+    "deadlock": "💀 Deadlock",
+    "threadpool": "🧵 Thread Pool"
+  },
   "controls": {
     "prev": "&larr; Sebelumnya",
-    "next": "Langkah Selanjutnya &rarr;",
-    "reset": "Ulangi Dari Awal",
-    "done": "Selesai ✓",
-    "stepCounter": "Langkah {n} / {total}"
+    "next": "Langkah Berikutnya &rarr;",
+    "reset": "Ulangi dari Awal",
+    "done": "Selesai ✓"
   },
-  "legend": {
-    "title": "Referensi cepat: Konsep",
-    "sub": "Istilah umum dalam multithreading.",
-    "headers": ["Istilah", "Deskripsi"],
-    "rows": [
+  "steps": {
+    "race": [
       {
-        "layer": "Thread",
-        "dataName": "Urutan instruksi eksekusi independen di dalam suatu program.",
-        "added": "-",
-        "removed": "-"
+        "tag": "MULAI",
+        "title": "Program dimulai dengan satu thread utama",
+        "desc": "Sebuah proses dimulai dengan satu alur eksekusi (main thread). Di memori bersama, ada satu variabel bernama counter dengan nilai awal 0 — variabel inilah yang nanti diubah oleh dua thread sekaligus.",
+        "fields": [["Variabel bersama", "counter = 0"], ["Thread aktif", "1 (main thread)"]]
       },
       {
-        "layer": "Konkurensi",
-        "dataName": "Menangani beberapa hal sekaligus secara bersamaan.",
-        "added": "-",
-        "removed": "-"
+        "tag": "DIBUAT",
+        "title": "Dua thread pekerja dibuat: Thread A dan Thread B",
+        "desc": "Main thread membuat (spawn) dua thread. Keduanya berjalan di proses yang sama, jadi sama-sama bisa membaca dan menulis counter — tanpa aturan main apa pun soal siapa boleh menyentuhnya kapan.",
+        "fields": [["Dibagikan ke keduanya", "counter, sama-sama bisa diakses"], ["Aturan sinkronisasi", "belum ada"]]
       },
       {
-        "layer": "Race Condition",
-        "dataName": "Ketika beberapa thread mencoba mengubah data yang sama di saat bersamaan, menyebabkan hasil yang tidak terduga.",
-        "added": "-",
-        "removed": "-"
+        "tag": "THREAD A JALAN",
+        "title": "Scheduler memberi giliran CPU ke Thread A",
+        "desc": "Thread A mendapat giliran duluan dan membaca nilai counter (0) ke dalam registernya sendiri, bersiap menambahkannya. Thread B untuk sementara menunggu giliran.",
+        "fields": [["CPU dipegang", "Thread A"], ["Dibaca Thread A", "counter = 0"]]
       },
       {
-        "layer": "Mutex / Lock",
-        "dataName": "Mekanisme untuk memastikan hanya satu thread yang dapat mengakses sumber daya pada satu waktu.",
-        "added": "-",
-        "removed": "-"
+        "tag": "CONTEXT SWITCH",
+        "title": "Jatah waktu Thread A habis — CPU beralih ke Thread B",
+        "desc": "Sebelum Thread A sempat menulis balik hasil tambahannya, sistem operasi mengalihkan CPU ke Thread B. Thread A dijeda persis di tengah pekerjaan, dengan nilai 0 masih tersimpan di registernya.",
+        "fields": [["Thread A", "dijeda, register masih menyimpan 0"], ["CPU sekarang dipegang", "Thread B"]]
+      },
+      {
+        "tag": "THREAD B MENULIS",
+        "title": "Thread B membaca, menambah, lalu menulis counter",
+        "desc": "Thread B tidak tahu-menahu soal Thread A yang sedang dijeda. Ia membaca counter (masih 0), menambahkannya, lalu menulis hasilnya: counter menjadi 1.",
+        "fields": [["Dibaca Thread B", "counter = 0"], ["Ditulis Thread B", "counter = 1"]]
+      },
+      {
+        "tag": "THREAD A MENIMPA ⚠",
+        "title": "CPU kembali ke Thread A — ia melanjutkan dari register basi",
+        "desc": "Thread A dilanjutkan persis dari titik jeda. Ia TIDAK membaca ulang counter, karena sudah menyimpan nilai lama (0) di registernya. Ia menambahkan 1 ke nilai lama itu, lalu menulis counter = 1 — menimpa hasil kerja Thread B.",
+        "fields": [["Register lama Thread A", "masih 0 (basi / stale)"], ["Ditulis Thread A", "counter = 1 (menimpa update Thread B)"]]
+      },
+      {
+        "tag": "SELESAI ⚠",
+        "title": "Bug: satu update hilang (lost update)",
+        "desc": "Dua thread sama-sama menambahkan 1 ke counter — harusnya hasil akhirnya 2. Tapi karena keduanya membaca nilai lama sebelum saling menulis, satu penambahan hilang begitu saja. Inilah race condition: hasil program bergantung pada kebetulan urutan giliran CPU.",
+        "fields": [["Hasil seharusnya", "2"], ["Hasil sebenarnya", "1 — satu update hilang"]]
+      }
+    ],
+    "mutex": [
+      {
+        "tag": "MULAI",
+        "title": "Program dimulai, kali ini dengan sebuah mutex lock",
+        "desc": "Sama seperti sebelumnya, ada satu variabel bersama counter = 0. Bedanya, sekarang juga disiapkan satu mutex lock — semacam kunci pintu yang hanya bisa dipegang satu thread dalam satu waktu.",
+        "fields": [["Variabel bersama", "counter = 0"], ["Objek baru", "mutex lock (masih terbuka)"]]
+      },
+      {
+        "tag": "DIBUAT",
+        "title": "Thread A dan Thread B dibuat, sepakat memakai lock yang sama",
+        "desc": "Kedua thread berbagi counter seperti sebelumnya. Bedanya, kali ini mereka juga sepakat memakai mutex lock yang sama sebelum menyentuh counter — aturan main yang tadi tidak ada.",
+        "fields": [["Dibagikan ke keduanya", "counter & mutex lock yang sama"], ["Aturan baru", "wajib pegang lock dulu sebelum ubah counter"]]
+      },
+      {
+        "tag": "THREAD A MENGUNCI",
+        "title": "Thread A mendapat giliran CPU dan langsung mengunci mutex",
+        "desc": "Sebelum menyentuh counter sama sekali, Thread A mengunci mutex lebih dulu. Karena lock sedang kosong, Thread A berhasil memegangnya. Mulai titik ini, Thread B tidak boleh masuk ke bagian kritis yang sama sampai Thread A melepas lock.",
+        "fields": [["Lock dipegang oleh", "Thread A"], ["Thread B", "diblokir, menunggu lock dilepas"]]
+      },
+      {
+        "tag": "KERJA ATOMIK",
+        "title": "Thread A membaca, menambah, dan menulis counter — tanpa gangguan",
+        "desc": "Karena Thread B diblokir menunggu lock, tidak ada yang bisa ikut mengubah counter selama Thread A bekerja. Dari sudut pandang data bersama, operasi ini seolah terjadi sekaligus (atomik).",
+        "fields": [["Dibaca Thread A", "counter = 0"], ["Ditulis Thread A", "counter = 1"]]
+      },
+      {
+        "tag": "LOCK DILEPAS",
+        "title": "Thread A selesai, lalu melepas mutex lock",
+        "desc": "Setelah counter berhasil diperbarui dengan aman, Thread A melepas lock. Sekarang lock kembali terbuka — Thread B yang sejak tadi menunggu jadi punya kesempatan.",
+        "fields": [["Lock sekarang", "terbuka"], ["counter setelah Thread A", "1"]]
+      },
+      {
+        "tag": "THREAD B MENGUNCI & BEKERJA",
+        "title": "CPU beralih ke Thread B, yang langsung mengunci mutex",
+        "desc": "Thread B yang tadi diblokir kini mendapat giliran CPU dan segera mengunci mutex untuk dirinya sendiri. Karena lock memaksa giliran, ia membaca nilai counter yang sudah diperbarui Thread A (1, bukan nilai basi) — lalu menambah jadi 2, menulis, dan melepas lock.",
+        "fields": [["Lock dipegang oleh", "Thread B"], ["Ditulis Thread B", "counter = 2"]]
+      },
+      {
+        "tag": "SELESAI ✓",
+        "title": "Hasil benar: kedua penambahan tercatat",
+        "desc": "Dengan mutex lock, kedua thread bergiliran mengakses counter satu per satu, tidak pernah bersamaan. Hasil akhirnya sesuai harapan: 0 + 1 + 1 = 2. Harganya sedikit waktu tunggu — Thread B sempat diblokir — tapi hasilnya bisa diandalkan.",
+        "fields": [["Hasil seharusnya", "2"], ["Hasil sebenarnya", "2 — benar, tidak ada update yang hilang"]]
+      }
+    ],
+    "deadlock": [
+      {
+        "tag": "MULAI",
+        "title": "Dua resource terpisah, masing-masing dengan lock sendiri",
+        "desc": "Kali ini ada dua sumber daya berbeda — Resource X dan Resource Y — masing-masing dilindungi mutex sendiri: Lock X dan Lock Y. Thread A dan Thread B sama-sama akan butuh KEDUANYA untuk menyelesaikan pekerjaannya.",
+        "fields": [["Resource X", "dilindungi Lock X"], ["Resource Y", "dilindungi Lock Y"]]
+      },
+      {
+        "tag": "THREAD A KUNCI X",
+        "title": "Thread A mendapat giliran dan mengunci Lock X",
+        "desc": "Thread A mulai bekerja: ia mengunci Lock X untuk mengakses Resource X. Berhasil, karena Lock X masih kosong. Thread A masih butuh Resource Y juga nanti untuk menyelesaikan tugasnya.",
+        "fields": [["Lock X dipegang oleh", "Thread A"], ["Lock Y", "masih terbuka"]]
+      },
+      {
+        "tag": "THREAD B KUNCI Y",
+        "title": "Hampir bersamaan, Thread B mengunci Lock Y",
+        "desc": "Thread B menjalankan pola yang mirip tapi urutan sumber dayanya terbalik: ia mengunci Lock Y lebih dulu untuk mengakses Resource Y. Berhasil, karena Lock Y masih kosong saat itu.",
+        "fields": [["Lock Y dipegang oleh", "Thread B"], ["Lock X", "masih dipegang Thread A"]]
+      },
+      {
+        "tag": "THREAD A MINTA Y",
+        "title": "Thread A, sambil masih memegang X, sekarang minta Y",
+        "desc": "Untuk melanjutkan tugasnya, Thread A butuh Resource Y juga — ia mencoba mengunci Lock Y. Tapi Lock Y sedang dipegang Thread B, jadi Thread A diblokir dan menunggu, sambil TETAP memegang Lock X (tidak dilepas).",
+        "fields": [["Thread A", "menunggu Lock Y, tapi tetap menggenggam Lock X"], ["Lock Y", "dipegang Thread B"]]
+      },
+      {
+        "tag": "THREAD B MINTA X",
+        "title": "Thread B, sambil masih memegang Y, sekarang minta X",
+        "desc": "Giliran Thread B butuh Resource X untuk lanjut — ia mencoba mengunci Lock X. Tapi Lock X sedang dipegang Thread A, jadi Thread B juga diblokir dan menunggu, sambil TETAP memegang Lock Y.",
+        "fields": [["Thread B", "menunggu Lock X, tapi tetap menggenggam Lock Y"], ["Lock X", "dipegang Thread A"]]
+      },
+      {
+        "tag": "DEADLOCK ⚠",
+        "title": "Keduanya saling menunggu selamanya — program macet total",
+        "desc": "Thread A menunggu Thread B melepas Lock Y. Thread B menunggu Thread A melepas Lock X. Tidak ada satu pun yang akan pernah melepas lock yang digenggamnya, karena keduanya sedang menunggu, bukan sedang bekerja. Inilah circular wait — program hang selamanya, kecuali ada intervensi dari luar.",
+        "fields": [["Thread A menunggu", "Lock Y (dipegang B)"], ["Thread B menunggu", "Lock X (dipegang A)"], ["Status program", "macet total (hang)"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Cara mencegahnya: urutan penguncian yang konsisten",
+        "desc": "Penyebabnya adalah circular wait: A pegang X nunggu Y, B pegang Y nunggu X. Cara paling umum mencegahnya adalah memaksa SEMUA thread mengunci resource dengan urutan yang sama — misalnya selalu Lock X dulu baru Lock Y, tanpa kecuali — sehingga pola saling-tunggu melingkar ini tidak mungkin terbentuk.",
+        "fields": [["Penyebab", "circular wait — dua thread saling menunggu lock lawan"], ["Pencegahan umum", "urutan penguncian yang konsisten di semua thread"]]
+      }
+    ],
+    "threadpool": [
+      {
+        "tag": "MULAI",
+        "title": "8 tugas kecil datang berturut-turut",
+        "desc": "Bayangkan sebuah web server menerima 8 request kecil dalam waktu singkat. Bagaimana cara terbaik memprosesnya secara bersamaan tanpa membebani sistem?",
+        "fields": [["Tugas masuk", "8 request"], ["Pertanyaannya", "siapa yang mengerjakan masing-masing?"]]
+      },
+      {
+        "tag": "CARA NAIF",
+        "title": "Kalau tiap tugas bikin thread baru — mahal",
+        "desc": "Pendekatan paling naif: buat satu thread OS baru untuk setiap tugas yang masuk. Masalahnya, membuat dan menghapus thread OS itu tidak gratis — makan waktu dan memori. Kalau tugasnya kecil tapi datangnya deras, biaya membuat-menghapus thread bisa lebih besar dari pekerjaan itu sendiri.",
+        "fields": [["Pendekatan naif", "1 thread baru per tugas"], ["Masalahnya", "overhead pembuatan/penghapusan thread jadi mahal"]]
+      },
+      {
+        "tag": "POOL DIBUAT",
+        "title": "Sebagai gantinya: sekumpulan worker thread tetap dibuat di awal",
+        "desc": "Alih-alih membuat thread baru tiap kali, sistem membuat sejumlah kecil thread pekerja (misalnya 3 worker) SEKALI SAJA di awal. Ketiganya akan dipakai berulang-ulang untuk banyak tugas berbeda, bukan dibuang setelah satu tugas selesai.",
+        "fields": [["Worker dibuat", "3 thread, sekali saja"], ["Prinsip", "dibuat sekali, dipakai berkali-kali"]]
+      },
+      {
+        "tag": "TUGAS MASUK ANTREAN",
+        "title": "Tugas yang masuk tidak langsung dapat thread — mereka antre dulu",
+        "desc": "Kedelapan tugas tadi tidak langsung diberi thread masing-masing. Mereka masuk ke task queue (antrean tugas) dan menunggu giliran diambil oleh worker mana pun yang sedang menganggur.",
+        "fields": [["Tugas dalam antrean", "8"], ["Worker saat ini", "3, semuanya menganggur"]]
+      },
+      {
+        "tag": "WORKER MENGAMBIL TUGAS",
+        "title": "Worker yang menganggur mengambil tugas dari depan antrean",
+        "desc": "Ketiga worker yang tadinya menganggur masing-masing mengambil satu tugas dari depan antrean dan mulai mengerjakannya. Antrean pun menyusut seiring tugas-tugas itu diambil.",
+        "fields": [["Diambil dari antrean", "3 tugas"], ["Sisa dalam antrean", "5"]]
+      },
+      {
+        "tag": "WORKER KEMBALI KE POOL",
+        "title": "Setelah selesai, worker TIDAK dihapus — ia mengambil tugas berikutnya",
+        "desc": "Begitu sebuah worker selesai dengan tugasnya, ia tidak dihancurkan seperti pada pendekatan naif — ia langsung kembali ke pool, siap mengambil tugas berikutnya dari antrean. Thread yang sama dipakai ulang untuk tugas yang berbeda-beda.",
+        "fields": [["Worker selesai", "kembali menganggur, langsung ambil tugas baru"], ["Sisa dalam antrean", "4"]]
+      },
+      {
+        "tag": "SELESAI",
+        "title": "Jumlah thread tetap, kerja terus mengalir lewat antrean",
+        "desc": "Dengan jumlah worker yang tetap kecil dan antrean sebagai penyangga, sistem bisa menangani jauh lebih banyak tugas daripada jumlah thread yang benar-benar ada — tanpa harus terus-menerus membuat & menghapus thread OS yang mahal. Inilah sebabnya hampir semua web server dan runtime modern memakai thread pool.",
+        "fields": [["Jumlah thread", "tetap (3), tidak bertambah seiring jumlah tugas"], ["Manfaat utama", "menghindari overhead pembuatan thread berulang-ulang"]]
       }
     ]
-  },
-  "footer": "DIAGRAM INTERAKTIF — KONSEP MULTITHREADING",
-  "steps": [
-    {
-      "tag": "MULAI",
-      "title": "Eksekusi Single-Thread",
-      "desc": "Dalam program single-thread, tugas dieksekusi secara berurutan. Tugas B harus menunggu Tugas A selesai. Jika Tugas A lambat, seluruh program akan macet.",
-      "fields": [["Eksekusi", "Berurutan"], ["Jumlah Thread", "1"]],
-      "sizeUnit": null
-    },
-    {
-      "tag": "MULTI",
-      "title": "Memperkenalkan Banyak Thread",
-      "desc": "Dengan membuat beberapa thread, tugas dapat didistribusikan. Thread 1 mengerjakan Tugas A, Thread 2 mengerjakan Tugas B. Mereka sekarang dapat mengeksekusi tugas secara bersamaan.",
-      "fields": [["Eksekusi", "Konkuren (Bersamaan)"], ["Jumlah Thread", "3"]],
-      "sizeUnit": null
-    },
-    {
-      "tag": "BERBAGI",
-      "title": "Masalah Berbagi Sumber Daya",
-      "desc": "Semua thread dalam sebuah proses berbagi memori yang sama. Jika Thread 1 dan Thread 2 mencoba memperbarui variabel penghitung pada saat yang sama, 'Race Condition' terjadi dan data menjadi rusak.",
-      "fields": [["Masalah", "Race Condition"], ["Hasil", "Data Rusak / Korup"]],
-      "sizeUnit": null
-    },
-    {
-      "tag": "TERKUNCI",
-      "title": "Mengatasinya dengan Mutex (Lock)",
-      "desc": "Untuk mencegah race condition, kita menggunakan Mutex (Mutual Exclusion). Sebelum memperbarui penghitung, thread harus mendapatkan kunci (lock). Jika thread lain sudah memegangnya, ia harus menunggu.",
-      "fields": [["Solusi", "Mutex / Lock"], ["Hasil", "Data Aman"]],
-      "sizeUnit": null
-    }
-  ]
+  }
 }
