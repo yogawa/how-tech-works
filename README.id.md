@@ -35,12 +35,12 @@ Untuk versi yang di-hosting, aktifkan **GitHub Pages** di pengaturan repository 
     ├── dns.html                  # Bagaimana nama domain diterjemahkan menjadi alamat IP
     ├── asymmetric-encryption.html # Pasangan kunci publik/privat — enkripsi & tanda tangan digital
     ├── blockchain.html           # Blok yang saling terhubung lewat hash dan konsensus jaringan
-    ├── multithreading.html       # Thread konkuren, race condition, dan mutex lock
+    ├── multithreading.html       # 4 skenario — race condition, mutex lock, deadlock, thread pool
     ├── docker-vs-vm.html         # Container vs. virtual machine tradisional
     ├── git.html                  # Git: 5 skenario — alur commit, branching, konflik, reset vs revert, rebase vs merge
     ├── https-tls.html            # HTTPS/TLS: 4 skenario — handshake, rantai kepercayaan sertifikat, TLS 1.2 vs 1.3, serangan MITM
     ├── event-driven-architecture.html # EDA: 4 skenario — pub/sub, event queue, koreografi vs orkestrasi, ketahanan sistem
-    ├── llm.html                  # LLM: tokenisasi, embedding, self-attention, dan generasi token
+    ├── llm.html                  # 5 skenario — alur inferensi, generation loop, training, context window, halusinasi
     ├── aot-vs-jit.html           # AOT vs JIT: alur kompilasi, startup/warm-up, optimisasi adaptif
     └── i18n/                     # Terjemahan konten per topik, satu file per bahasa
         ├── tcp-ip-layers.id.json / .en.json
@@ -73,12 +73,12 @@ Untuk versi yang di-hosting, aktifkan **GitHub Pages** di pengaturan repository 
 - [x] DNS — bagaimana nama domain diterjemahkan menjadi alamat IP
 - [x] Enkripsi asimetris — pasangan kunci publik/privat, dipakai untuk mengenkripsi pesan rahasia sekaligus tanda tangan digital
 - [x] Blockchain — blok yang saling terhubung lewat hash dan konsensus jaringan
-- [x] Multithreading — thread konkuren, race condition, dan bagaimana mutex lock mencegahnya
+- [x] Multithreading — empat skenario: race condition, mutex lock, deadlock, dan kenapa program nyata memakai thread pool
 - [x] Docker/container vs. virtual machine
 - [x] Git — lima skenario: alur dasar commit, branching & merging, konflik merge, reset vs. revert, dan rebase vs. merge
 - [x] HTTPS/TLS — empat skenario: alur TLS handshake lengkap, rantai kepercayaan sertifikat, TLS 1.2 vs. 1.3, dan simulasi serangan man-in-the-middle
 - [x] Event-Driven Architecture — empat skenario: pola publish/subscribe dasar, event queue untuk pemrosesan async, koreografi vs. orkestrasi, dan ketahanan terhadap kegagalan sebagian
-- [x] LLM — cara Large Language Model memproses bahasa: tokenisasi, embedding, self-attention, dan generasi token
+- [x] LLM — lima skenario: alur inferensi, autoregressive generation loop, training, batas context window, dan halusinasi
 - [x] AOT vs. JIT compiler — empat skenario: alur kompilasi AOT, alur kompilasi JIT, startup time & warm-up, dan optimisasi adaptif
 
 Semua topik dari daftar ide awal sudah selesai dibuat — ide topik baru dan kontribusi tetap sangat diterima.

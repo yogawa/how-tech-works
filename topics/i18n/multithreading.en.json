@@ -1,78 +1,198 @@
 {
-  "documentTitle": "Multithreading: Running Tasks Concurrently",
+  "documentTitle": "Multithreading: Race Conditions, Mutexes, Deadlocks & Thread Pools",
   "eyebrow": "Systems & OS",
-  "h1Prefix": "A program can have ",
-  "h1Highlight": "multiple trains of thought",
+  "h1Prefix": "One program, ",
+  "h1Highlight": "many threads running at once",
   "h1Suffix": ".",
-  "lede": "Instead of executing tasks one by one, a program can split them into 'threads' that run concurrently. This makes things faster but introduces new problems when threads try to share the same data. Let's see how it works and how to manage the chaos with locks.",
-  "figCaption": "FIG. 01 — MULTITHREADING",
+  "lede": "Multithreading lets a single program run many execution paths (threads) at once, far faster than doing everything one at a time. But the moment those threads start sharing data, new problems appear. Try the four scenarios below — a race condition that corrupts data, a mutex lock that fixes it, a deadlock that freezes the whole program, and why real programs use a thread pool instead of spawning a new thread for every task.",
+  "cases": {
+    "race": "⚡ Race Condition",
+    "mutex": "🔒 Mutex Lock",
+    "deadlock": "💀 Deadlock",
+    "threadpool": "🧵 Thread Pool"
+  },
   "controls": {
     "prev": "&larr; Previous",
     "next": "Next Step &rarr;",
-    "reset": "Restart",
-    "done": "Done ✓",
-    "stepCounter": "Step {n} / {total}"
+    "reset": "Restart From The Beginning",
+    "done": "Done ✓"
   },
-  "legend": {
-    "title": "Quick reference: concepts",
-    "sub": "Common terms in multithreading.",
-    "headers": ["Term", "Description"],
-    "rows": [
+  "steps": {
+    "race": [
       {
-        "layer": "Thread",
-        "dataName": "An independent sequence of execution within a program.",
-        "added": "-",
-        "removed": "-"
+        "tag": "START",
+        "title": "The program starts with a single main thread",
+        "desc": "A process starts with one execution path (the main thread). In shared memory there's a single variable called counter, starting at 0 — this is the variable two threads are about to fight over.",
+        "fields": [["Shared variable", "counter = 0"], ["Active threads", "1 (main thread)"]]
       },
       {
-        "layer": "Concurrency",
-        "dataName": "Dealing with multiple things at once.",
-        "added": "-",
-        "removed": "-"
+        "tag": "SPAWNED",
+        "title": "Two worker threads are created: Thread A and Thread B",
+        "desc": "The main thread spawns two threads. Both run inside the same process, so both can read and write counter — with no rule at all yet about who's allowed to touch it, or when.",
+        "fields": [["Shared by both", "counter, accessible to either one"], ["Synchronization rule", "none yet"]]
       },
       {
-        "layer": "Race Condition",
-        "dataName": "When multiple threads try to write to the same data at the same time, causing unexpected results.",
-        "added": "-",
-        "removed": "-"
+        "tag": "THREAD A RUNS",
+        "title": "The scheduler gives Thread A the CPU first",
+        "desc": "Thread A gets scheduled first and reads the value of counter (0) into its own register, getting ready to increment it. Thread B waits its turn for now.",
+        "fields": [["CPU held by", "Thread A"], ["Read by Thread A", "counter = 0"]]
       },
       {
-        "layer": "Mutex / Lock",
-        "dataName": "A mechanism to ensure only one thread can access a resource at a time.",
-        "added": "-",
-        "removed": "-"
+        "tag": "CONTEXT SWITCH",
+        "title": "Thread A's time slice runs out — the CPU switches to Thread B",
+        "desc": "Before Thread A can write its incremented result back, the operating system switches the CPU over to Thread B. Thread A is paused mid-task, with the value 0 still sitting in its register.",
+        "fields": [["Thread A", "paused, register still holds 0"], ["CPU now held by", "Thread B"]]
+      },
+      {
+        "tag": "THREAD B WRITES",
+        "title": "Thread B reads, increments, then writes counter",
+        "desc": "Thread B has no idea Thread A is paused. It reads counter (still 0), increments it, then writes the result back: counter becomes 1.",
+        "fields": [["Read by Thread B", "counter = 0"], ["Written by Thread B", "counter = 1"]]
+      },
+      {
+        "tag": "THREAD A OVERWRITES ⚠",
+        "title": "The CPU returns to Thread A — it resumes from a stale register",
+        "desc": "Thread A picks up exactly where it left off. It does NOT re-read counter, since it's still holding the old value (0) in its register. It adds 1 to that stale value, then writes counter = 1 — overwriting Thread B's work.",
+        "fields": [["Thread A's old register", "still 0 (stale)"], ["Written by Thread A", "counter = 1 (overwrites Thread B's update)"]]
+      },
+      {
+        "tag": "DONE ⚠",
+        "title": "The bug: one update vanished (lost update)",
+        "desc": "Both threads added 1 to counter — the final result should be 2. But because each one read the old value before either wrote back, one increment simply vanished. This is a race condition: the program's outcome depends on the luck of CPU scheduling.",
+        "fields": [["Expected result", "2"], ["Actual result", "1 — one update was lost"]]
+      }
+    ],
+    "mutex": [
+      {
+        "tag": "START",
+        "title": "The program starts, this time with a mutex lock",
+        "desc": "Same setup as before, with a shared counter = 0. The difference: this time there's also a mutex lock in play — a kind of door lock only one thread can hold at a time.",
+        "fields": [["Shared variable", "counter = 0"], ["New object", "a mutex lock (currently unlocked)"]]
+      },
+      {
+        "tag": "SPAWNED",
+        "title": "Thread A and Thread B are created, agreeing to share the same lock",
+        "desc": "Both threads share counter just like before. The difference is that this time they also agree to use the same mutex lock before touching counter — a rule that simply didn't exist before.",
+        "fields": [["Shared by both", "counter & the same mutex lock"], ["New rule", "must hold the lock before touching counter"]]
+      },
+      {
+        "tag": "THREAD A LOCKS",
+        "title": "Thread A gets the CPU and immediately locks the mutex",
+        "desc": "Before touching counter at all, Thread A locks the mutex first. Since the lock is free, Thread A succeeds. From this point on, Thread B isn't allowed into that same critical section until Thread A releases the lock.",
+        "fields": [["Lock held by", "Thread A"], ["Thread B", "blocked, waiting for the lock to be released"]]
+      },
+      {
+        "tag": "ATOMIC WORK",
+        "title": "Thread A reads, increments, and writes counter — undisturbed",
+        "desc": "Since Thread B is blocked waiting on the lock, nothing else can touch counter while Thread A works. From the perspective of the shared data, this operation happens as if it were a single, indivisible step.",
+        "fields": [["Read by Thread A", "counter = 0"], ["Written by Thread A", "counter = 1"]]
+      },
+      {
+        "tag": "LOCK RELEASED",
+        "title": "Thread A finishes, then releases the mutex lock",
+        "desc": "Once counter has been safely updated, Thread A releases the lock. The lock is open again — and Thread B, which has been waiting this whole time, finally gets its chance.",
+        "fields": [["Lock now", "unlocked"], ["counter after Thread A", "1"]]
+      },
+      {
+        "tag": "THREAD B LOCKS & WORKS",
+        "title": "The CPU switches to Thread B, which immediately locks the mutex",
+        "desc": "Thread B, previously blocked, now gets the CPU and immediately locks the mutex for itself. Because the lock enforces ordering, it reads the value Thread A already updated (1, not a stale value) — increments it to 2, writes it, and releases the lock.",
+        "fields": [["Lock held by", "Thread B"], ["Written by Thread B", "counter = 2"]]
+      },
+      {
+        "tag": "DONE ✓",
+        "title": "Correct result: both increments were recorded",
+        "desc": "With the mutex lock, both threads access counter one at a time, never simultaneously. The final result matches what's expected: 0 + 1 + 1 = 2. The price is a bit of waiting — Thread B was briefly blocked — but the result can be trusted.",
+        "fields": [["Expected result", "2"], ["Actual result", "2 — correct, no update was lost"]]
+      }
+    ],
+    "deadlock": [
+      {
+        "tag": "START",
+        "title": "Two separate resources, each with its own lock",
+        "desc": "This time there are two different resources — Resource X and Resource Y — each protected by its own mutex: Lock X and Lock Y. Thread A and Thread B will both need BOTH resources to finish their work.",
+        "fields": [["Resource X", "protected by Lock X"], ["Resource Y", "protected by Lock Y"]]
+      },
+      {
+        "tag": "THREAD A LOCKS X",
+        "title": "Thread A gets scheduled and locks Lock X",
+        "desc": "Thread A starts working: it locks Lock X to access Resource X. It succeeds, since Lock X was free. Thread A will also need Resource Y later to finish its task.",
+        "fields": [["Lock X held by", "Thread A"], ["Lock Y", "still unlocked"]]
+      },
+      {
+        "tag": "THREAD B LOCKS Y",
+        "title": "Around the same time, Thread B locks Lock Y",
+        "desc": "Thread B runs a similar pattern but in the opposite resource order: it locks Lock Y first to access Resource Y. It succeeds too, since Lock Y was free at that moment.",
+        "fields": [["Lock Y held by", "Thread B"], ["Lock X", "still held by Thread A"]]
+      },
+      {
+        "tag": "THREAD A WANTS Y",
+        "title": "Thread A, still holding X, now asks for Y",
+        "desc": "To continue its task, Thread A also needs Resource Y — it tries to lock Lock Y. But Lock Y is held by Thread B, so Thread A gets blocked and waits, all while STILL holding onto Lock X (it never releases it).",
+        "fields": [["Thread A", "waiting on Lock Y, but still gripping Lock X"], ["Lock Y", "held by Thread B"]]
+      },
+      {
+        "tag": "THREAD B WANTS X",
+        "title": "Thread B, still holding Y, now asks for X",
+        "desc": "Thread B needs Resource X to continue — it tries to lock Lock X. But Lock X is held by Thread A, so Thread B also gets blocked and waits, all while STILL holding onto Lock Y.",
+        "fields": [["Thread B", "waiting on Lock X, but still gripping Lock Y"], ["Lock X", "held by Thread A"]]
+      },
+      {
+        "tag": "DEADLOCK ⚠",
+        "title": "Both wait on each other forever — the program freezes completely",
+        "desc": "Thread A is waiting for Thread B to release Lock Y. Thread B is waiting for Thread A to release Lock X. Neither will ever release what it's holding, because both are waiting, not working. This is a circular wait — the program hangs forever, unless something intervenes from the outside.",
+        "fields": [["Thread A waits on", "Lock Y (held by B)"], ["Thread B waits on", "Lock X (held by A)"], ["Program status", "completely frozen (hung)"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "How to prevent it: a consistent locking order",
+        "desc": "The root cause is a circular wait: A holds X and wants Y, B holds Y and wants X. The most common fix is forcing EVERY thread to lock resources in the same order — say, always Lock X before Lock Y, no exceptions — so this circular waiting pattern can never form in the first place.",
+        "fields": [["Root cause", "circular wait — two threads each waiting on the other's lock"], ["Common prevention", "a consistent lock ordering across every thread"]]
+      }
+    ],
+    "threadpool": [
+      {
+        "tag": "START",
+        "title": "8 small tasks arrive back to back",
+        "desc": "Imagine a web server receiving 8 small requests in quick succession. What's the best way to handle them concurrently without overloading the system?",
+        "fields": [["Incoming tasks", "8 requests"], ["The question", "who handles each one?"]]
+      },
+      {
+        "tag": "THE NAIVE WAY",
+        "title": "Spawning a new thread per task gets expensive",
+        "desc": "The most naive approach: create a brand-new OS thread for every incoming task. The problem is that creating and destroying OS threads isn't free — it costs time and memory. If tasks are small but arrive rapidly, the overhead of spinning threads up and down can outweigh the actual work.",
+        "fields": [["Naive approach", "1 new thread per task"], ["The problem", "thread creation/teardown overhead gets expensive"]]
+      },
+      {
+        "tag": "POOL CREATED",
+        "title": "Instead: a fixed set of worker threads is created upfront",
+        "desc": "Rather than spawning a new thread every time, the system creates a small number of worker threads (say, 3) ONCE, upfront. Those same three will be reused across many different tasks, instead of being thrown away after just one.",
+        "fields": [["Workers created", "3 threads, just once"], ["Principle", "create once, reuse many times"]]
+      },
+      {
+        "tag": "TASKS QUEUE UP",
+        "title": "Incoming tasks don't get a thread right away — they queue first",
+        "desc": "Those 8 tasks don't each get their own thread immediately. They land in a task queue and wait their turn to be picked up by whichever worker happens to be free.",
+        "fields": [["Tasks in queue", "8"], ["Workers right now", "3, all idle"]]
+      },
+      {
+        "tag": "WORKERS PICK UP TASKS",
+        "title": "Idle workers pull tasks off the front of the queue",
+        "desc": "The three previously idle workers each grab one task from the front of the queue and start working on it. The queue shrinks as tasks get picked up.",
+        "fields": [["Pulled from queue", "3 tasks"], ["Remaining in queue", "5"]]
+      },
+      {
+        "tag": "WORKER RETURNS TO THE POOL",
+        "title": "Once done, a worker isn't destroyed — it grabs the next task",
+        "desc": "The moment a worker finishes its task, it isn't torn down the way it would be in the naive approach — it goes straight back to the pool, ready to pull the next task off the queue. The same thread gets reused across many different tasks.",
+        "fields": [["Worker finishes", "goes idle, immediately grabs a new task"], ["Remaining in queue", "4"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "Thread count stays fixed, work keeps flowing through the queue",
+        "desc": "With a small, fixed number of workers and a queue acting as a buffer, the system can handle far more tasks than the number of threads that actually exist — without constantly paying the expensive cost of creating and destroying OS threads. This is why nearly every modern web server and runtime uses a thread pool.",
+        "fields": [["Thread count", "fixed (3), doesn't grow with the number of tasks"], ["Main benefit", "avoids repeated thread-creation overhead"]]
       }
     ]
-  },
-  "footer": "INTERACTIVE DIAGRAM — MULTITHREADING CONCEPTS",
-  "steps": [
-    {
-      "tag": "START",
-      "title": "Single-Threaded Execution",
-      "desc": "In a single-threaded program, tasks are executed sequentially. Task B must wait for Task A to finish. If Task A is slow, the entire program freezes.",
-      "fields": [["Execution", "Sequential"], ["Threads", "1"]],
-      "sizeUnit": null
-    },
-    {
-      "tag": "MULTI",
-      "title": "Introducing Multiple Threads",
-      "desc": "By spawning multiple threads, tasks can be distributed. Thread 1 takes Task A, Thread 2 takes Task B. They can now execute concurrently.",
-      "fields": [["Execution", "Concurrent"], ["Threads", "3"]],
-      "sizeUnit": null
-    },
-    {
-      "tag": "SHARED",
-      "title": "The Shared Resource Problem",
-      "desc": "All threads in a process share the same memory. If Thread 1 and Thread 2 both try to update a shared counter at the exact same time, a 'Race Condition' occurs and the data gets corrupted.",
-      "fields": [["Problem", "Race Condition"], ["Result", "Data Corruption"]],
-      "sizeUnit": null
-    },
-    {
-      "tag": "LOCKED",
-      "title": "Solving it with a Mutex (Lock)",
-      "desc": "To prevent the race condition, we use a Mutex (Mutual Exclusion). Before updating the counter, a thread must acquire the lock. If another thread already has it, it must wait.",
-      "fields": [["Solution", "Mutex / Lock"], ["Result", "Data Safety"]],
-      "sizeUnit": null
-    }
-  ]
+  }
 }

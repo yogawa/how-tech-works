@@ -1,10 +1,17 @@
 {
-  "documentTitle": "LLM: How Large Language Models Think",
+  "documentTitle": "LLM: Inference, Training, Context Windows & Hallucination",
   "eyebrow": "AI & Machine Learning",
   "h1Prefix": "How LLMs ",
   "h1Highlight": "process language",
   "h1Suffix": ".",
-  "lede": "Large Language Models like GPT and Claude learn to understand and generate text by processing billions of words. Let's trace a prompt from raw text to model-generated response — step by step.",
+  "lede": "Large Language Models like GPT and Claude learn to understand and generate text by processing billions of words. Try the five scenarios below — the inference pipeline from prompt to response, how tokens get generated one by one through the autoregressive loop, how a model actually 'learns' through training, why there's a context window limit, and why LLMs can sometimes 'hallucinate'.",
+  "cases": {
+    "pipeline": "🧩 Inference Pipeline",
+    "autoregressive": "🔁 Generation Loop",
+    "training": "🎓 Training",
+    "context": "📏 Context Window",
+    "hallucination": "👻 Hallucination"
+  },
   "pipelineLabel": "LLM INFERENCE PIPELINE",
   "flowNodes": {
     "input": "Input",
@@ -23,7 +30,7 @@
   "controls": {
     "prev": "&larr; Previous",
     "next": "Next Step &rarr;",
-    "reset": "Restart",
+    "reset": "Restart From The Beginning",
     "done": "Done ✓"
   },
   "tokenExample": [
@@ -45,36 +52,220 @@
     {"pair": "LLM → ?", "meaning": "Punctuation shapes the answer"}
   ],
   "predTokens": ["LLM", "stands", "for", "Large", "Language", "Model"],
-  "steps": [
-    {
-      "tag": "INPUT",
-      "title": "The user types a prompt",
-      "desc": "You type a question or instruction into the chatbot. This raw text is the starting point — the model can't read words directly. It needs a numerical representation first.",
-      "fields": [["Prompt", "What is LLM?"], ["Length", "11 characters"], ["Language", "English"]]
-    },
-    {
-      "tag": "STEP 1",
-      "title": "Tokenization: Breaking text into tokens",
-      "desc": "The text is split into small pieces called 'tokens'. Each token represents a word, sub-word, or character. The model has a fixed vocabulary — each recognized token is matched to a unique number (token ID). Unknown words are broken into smaller sub-tokens.",
-      "fields": [["Input", "What is LLM?"], ["Token Count", "4 tokens"], ["Method", "BPE (Byte-Pair Encoding)"]]
-    },
-    {
-      "tag": "STEP 2",
-      "title": "Embedding: Converting tokens to vectors",
-      "desc": "Each token ID is converted into a high-dimensional numerical vector (e.g. 4096 dimensions). This vector captures the semantic meaning of the token — words with similar meanings end up close together in vector space.",
-      "fields": [["Vector Dimensions", "4096"], ["Memory per Token", "~16 KB"], ["Method", "Lookup Table + Positional Encoding"]]
-    },
-    {
-      "tag": "STEP 3",
-      "title": "Self-Attention: Understanding token relationships",
-      "desc": "This is the core of the Transformer architecture. Each token 'attends to' other tokens to understand context. For example, the token 'is' attends to 'LLM' to understand what the sentence is about. The Query-Key-Value mechanism computes relevance scores between all token pairs in parallel.",
-      "fields": [["Mechanism", "Scaled Dot-Product Attention"], ["Heads", "32 attention heads"], ["Complexity", "O(n²) with token count"]]
-    },
-    {
-      "tag": "STEP 4",
-      "title": "Decoder: Generating the predicted token",
-      "desc": "After passing through many Transformer layers, the model outputs a probability distribution over the entire vocabulary. The token with the highest probability (or one chosen via sampling strategy) becomes the next word in the response. This process repeats token by token until the response is complete.",
-      "fields": [["Output", "LLM stands for Large Language Model"], ["Tokens Generated", "6"], ["Strategy", "Greedy / Top-p Sampling"]]
-    }
-  ]
+  "steps": {
+    "pipeline": [
+      {
+        "tag": "INPUT",
+        "title": "The user types a prompt",
+        "desc": "You type a question or instruction into the chatbot. This raw text is the starting point — the model can't read words directly. It needs a numerical representation first.",
+        "fields": [["Prompt", "What is LLM?"], ["Length", "11 characters"], ["Language", "English"]]
+      },
+      {
+        "tag": "STEP 1",
+        "title": "Tokenization: Breaking text into tokens",
+        "desc": "The text is split into small pieces called 'tokens'. Each token represents a word, sub-word, or character. The model has a fixed vocabulary — each recognized token is matched to a unique number (token ID). Unknown words are broken into smaller sub-tokens.",
+        "fields": [["Input", "What is LLM?"], ["Token Count", "4 tokens"], ["Method", "BPE (Byte-Pair Encoding)"]]
+      },
+      {
+        "tag": "STEP 2",
+        "title": "Embedding: Converting tokens to vectors",
+        "desc": "Each token ID is converted into a high-dimensional numerical vector (e.g. 4096 dimensions). This vector captures the semantic meaning of the token — words with similar meanings end up close together in vector space.",
+        "fields": [["Vector Dimensions", "4096"], ["Memory per Token", "~16 KB"], ["Method", "Lookup Table + Positional Encoding"]]
+      },
+      {
+        "tag": "STEP 3",
+        "title": "Self-Attention: Understanding token relationships",
+        "desc": "This is the core of the Transformer architecture. Each token 'attends to' other tokens to understand context. For example, the token 'is' attends to 'LLM' to understand what the sentence is about. The Query-Key-Value mechanism computes relevance scores between all token pairs in parallel.",
+        "fields": [["Mechanism", "Scaled Dot-Product Attention"], ["Heads", "32 attention heads"], ["Complexity", "O(n²) with token count"]]
+      },
+      {
+        "tag": "STEP 4",
+        "title": "Decoder: Generating the predicted token",
+        "desc": "After passing through many Transformer layers, the model outputs a probability distribution over the entire vocabulary. The token with the highest probability (or one chosen via sampling strategy) becomes the next word in the response. This process repeats token by token until the response is complete.",
+        "fields": [["Output", "LLM stands for Large Language Model"], ["Tokens Generated", "6"], ["Strategy", "Greedy / Top-p Sampling"]]
+      }
+    ],
+    "autoregressive": [
+      {
+        "tag": "START",
+        "title": "The model generates its answer one token at a time",
+        "desc": "Starting prompt: \"The capital of France is\". Unlike the impression you get from a chatbot (as if the whole answer appears at once), the model actually generates its response TOKEN BY TOKEN, not all at once.",
+        "generated": "The capital of France is",
+        "fields": [["Prompt", "\"The capital of France is\""], ["How it generates", "one token per step"]]
+      },
+      {
+        "tag": "PREDICT TOKEN 1",
+        "title": "The model computes a probability for every candidate next token",
+        "desc": "Across the entire vocabulary, the model scores every candidate, then picks one — usually the highest-probability one. Here \" Paris\" wins by a wide margin.",
+        "generated": "The capital of France is",
+        "candidates": [{"tok": "Paris", "pct": 81}, {"tok": "Lyon", "pct": 5}, {"tok": "a", "pct": 4}, {"tok": "located", "pct": 3}],
+        "fields": [["Token chosen", "\" Paris\" (81%)"], ["Other candidates", "Lyon, a, located"]]
+      },
+      {
+        "tag": "APPENDED TO THE INPUT",
+        "title": "The newly chosen token is appended to the end of the text",
+        "desc": "\"Paris\" gets added to the end of the text, becoming a new input: \"The capital of France is Paris\". The model has no idea this is 'done' yet — it will reprocess the entire text (including the new token) to predict the next one.",
+        "generated": "The capital of France is **Paris**",
+        "fields": [["New input", "\"The capital of France is Paris\""], ["Status", "not yet considered finished by the model"]]
+      },
+      {
+        "tag": "PREDICT TOKEN 2 (LOOP)",
+        "title": "The same cycle repeats on the now-longer input",
+        "desc": "With the extended input, the model predicts another next token. This time a period \".\" wins decisively, since the sentence now feels grammatically complete.",
+        "generated": "The capital of France is Paris",
+        "candidates": [{"tok": ".", "pct": 74}, {"tok": ",", "pct": 10}, {"tok": " which", "pct": 8}, {"tok": " and", "pct": 4}],
+        "fields": [["Token chosen", "\".\" (74%)"], ["The principle", "exactly the same as the previous step"]]
+      },
+      {
+        "tag": "REPEATS UNTIL DONE",
+        "title": "The predict → append → predict cycle keeps going, token by token",
+        "desc": "This process keeps repeating — every new token gets appended to the input, then used to predict the next one — until the model predicts a special 'end of sequence' token, or hits a maximum length limit.",
+        "generated": "The capital of France is Paris.",
+        "fields": [["Stops when", "an end-of-sequence token is chosen, or the length limit is hit"], ["Final result", "\"The capital of France is Paris.\""]]
+      },
+      {
+        "tag": "THE ROLE OF TEMPERATURE",
+        "title": "The temperature parameter controls how bold the model is willing to be",
+        "desc": "Low temperature (e.g. 0.2) makes the model almost always pick the most likely token — consistent, but prone to feeling repetitive. High temperature (e.g. 1.2) gives less-likely tokens a real shot at being chosen — more varied answers, at the risk of feeling less coherent.",
+        "tempCompare": {
+          "low": [{"tok": "Paris", "pct": 93}, {"tok": "Lyon", "pct": 3}, {"tok": "a", "pct": 2}],
+          "high": [{"tok": "Paris", "pct": 48}, {"tok": "Lyon", "pct": 21}, {"tok": "a", "pct": 16}]
+        },
+        "fields": [["Low temperature", "consistent, tends toward repetitive"], ["High temperature", "varied, riskier on coherence"]]
+      }
+    ],
+    "training": [
+      {
+        "tag": "START",
+        "title": "The model starts from random weights — it knows nothing about language yet",
+        "desc": "Before it can answer anything, a model starts out with millions to billions of weights (parameters) filled with RANDOM numbers. It will 'learn' from trillions of words of text — books, articles, code, web pages — through a process called pretraining.",
+        "fields": [["Starting state", "random weights, no understanding of language"], ["Source of learning", "trillions of words of public text"]]
+      },
+      {
+        "tag": "PULL ONE EXAMPLE",
+        "title": "One sentence is pulled, with its last word hidden",
+        "desc": "From a massive text corpus, one sentence is pulled with its final word hidden. The model is asked to guess what word should fill that blank.",
+        "corpus": "The cat loves sleeping on the ___",
+        "fields": [["Source sentence", "\"The cat loves sleeping on the couch\""], ["What's hidden", "the last word"]]
+      },
+      {
+        "tag": "THE MODEL GUESSES",
+        "title": "With still-random weights, the first guess is usually wrong",
+        "desc": "Since its weights haven't been trained at all yet, the model's first guess is likely to be nonsensical — in this example it guesses 'car', which is clearly not something a cat usually sleeps on.",
+        "guess": "car",
+        "isCorrect": false,
+        "fields": [["Model's guess", "\"car\""], ["Quality of the guess", "wrong / nonsensical"]]
+      },
+      {
+        "tag": "COMPARED TO THE REAL ANSWER",
+        "title": "The guess gets compared against the actual word from the source text",
+        "desc": "The real word in the source text is 'couch'. The gap between the model's guess ('car') and the true answer ('couch') gets computed as a single number: the loss. The further off the guess, the higher the loss.",
+        "guess": "car",
+        "correct": "couch",
+        "loss": 82,
+        "fields": [["The real answer", "\"couch\""], ["Loss (higher = more wrong)", "high"]]
+      },
+      {
+        "tag": "WEIGHTS NUDGED SLIGHTLY",
+        "title": "Through backpropagation, millions of weights get nudged a tiny bit",
+        "desc": "Based on how large the loss is, an algorithm called backpropagation computes an adjustment direction for EVERY weight in the model (there can be billions), then nudges each one slightly toward making a similar future guess land a bit closer to the correct answer.",
+        "weightsAdjusted": true,
+        "fields": [["Mechanism", "backpropagation + gradient descent"], ["Size of each adjustment", "tiny, incremental"]]
+      },
+      {
+        "tag": "REPEATED TRILLIONS OF TIMES",
+        "title": "Pull example → guess → compare → adjust, repeated trillions of times",
+        "desc": "This cycle runs over and over across millions of different examples, on thousands of GPUs at once, for weeks to months. Through sheer repetition, patterns of language 'emerge' and get encoded into the model's weights — without a single human ever explicitly programming a rule of grammar.",
+        "fields": [["Scale of repetition", "trillions of examples, weeks on thousands of GPUs"], ["The end result", "weights that statistically 'understand' language patterns"]]
+      }
+    ],
+    "context": [
+      {
+        "tag": "START",
+        "title": "Every model has a context window limit",
+        "desc": "The context window is the maximum number of tokens — system prompt + the entire conversation history + the new message — the model can 'see' at once in a single pass. Say, 128,000 tokens.",
+        "usedPct": 5,
+        "maxTokens": "128,000 tokens",
+        "fields": [["Context window limit", "128,000 tokens (example)"], ["What counts toward it", "system prompt + history + new message"]]
+      },
+      {
+        "tag": "CONVERSATION STARTS",
+        "title": "A new conversation uses only a small slice of total capacity",
+        "desc": "At the start of a conversation, only a small number of tokens are in use — there's still plenty of room left in the context window.",
+        "usedPct": 8,
+        "fields": [["In use", "roughly 8% of capacity"], ["Room left", "plenty"]]
+      },
+      {
+        "tag": "THE CONVERSATION GROWS",
+        "title": "Every new message adds load — not just the latest one",
+        "desc": "The more back-and-forth messages pile up, the more tokens get used. What's often overlooked: the ENTIRE prior history has to be resent every single time, because the model doesn't actually 'remember' anything between one request and the next.",
+        "usedPct": 45,
+        "fields": [["In use", "roughly 45% of capacity"], ["What gets resent", "the whole history, not just the new message"]]
+      },
+      {
+        "tag": "APPROACHING THE LIMIT",
+        "title": "Total history + new message tokens are closing in on the max",
+        "desc": "If the conversation keeps going without pause, the token count will soon exceed what the model can process in a single pass.",
+        "usedPct": 92,
+        "fields": [["In use", "roughly 92% of capacity"], ["Warning", "getting close to the hard limit"]]
+      },
+      {
+        "tag": "LIMIT EXCEEDED ⚠",
+        "title": "The earliest part of the history gets trimmed so the rest still fits",
+        "desc": "Once the limit is exceeded, a common strategy is to trim (or summarize) the earliest part of the history, so the total token count fits back under the limit. The model literally can no longer see whatever got trimmed away.",
+        "usedPct": 100,
+        "overflow": true,
+        "fields": [["Common response", "trim/summarize the earliest messages"], ["Effect", "the trimmed portion is no longer visible to the model"]]
+      },
+      {
+        "tag": "THE RESULT: 'FORGETTING' EARLY CONTEXT",
+        "title": "The model seems to 'forget' — but the info simply isn't being sent anymore",
+        "desc": "If the user refers back to something mentioned way back at the start of a now-trimmed conversation, the model won't know the answer — not because it's 'forgetful', but because that part genuinely isn't among the tokens being sent to it anymore.",
+        "usedPct": 70,
+        "fields": [["Looks like", "the model forgot the earlier context"], ["Actual cause", "that part is no longer resent, not 'forgotten'"]]
+      }
+    ],
+    "hallucination": [
+      {
+        "tag": "START",
+        "title": "The user asks something specific and fairly obscure",
+        "desc": "The user asks: \"Who wrote the book 'A Complete History of Nordic Coffee Roasting, Volume 3' and what year was it published?\" — a book that doesn't actually exist.",
+        "question": "Who wrote 'A Complete History of Nordic Coffee Roasting, Volume 3' and what year was it published?",
+        "fields": [["Question", "about a book that never existed"], ["The challenge", "the model is still expected to answer"]]
+      },
+      {
+        "tag": "THERE'S NO \"FACT-CHECK MODE\"",
+        "title": "The model has no fact database it can look things up in",
+        "desc": "An LLM doesn't store facts the way a queryable encyclopedia does. All it has are statistical patterns: which tokens tend to follow which other tokens, learned from training data.",
+        "fields": [["What the model has", "statistical language patterns, not a fact database"], ["What the model lacks", "an internal 'fact-check' mechanism"]]
+      },
+      {
+        "tag": "IT STILL PREDICTS THE MOST PLAUSIBLE TOKENS",
+        "title": "The model runs the exact same machinery as always",
+        "desc": "Asked to answer, the model keeps predicting the token-by-token continuation that's MOST LIKELY according to language patterns — the exact same mechanism used for any question, whether or not a real answer actually exists.",
+        "fields": [["Mechanism used", "identical to answering any ordinary question"], ["No special-casing", "even when the true answer isn't known to the model"]]
+      },
+      {
+        "tag": "THE RESULT: A CONFIDENT, MADE-UP ANSWER ⚠",
+        "title": "The answer sounds convincing, detailed, and entirely fabricated",
+        "desc": "The model produces an author name and publication year that sound linguistically plausible — correctly formatted, confidently phrased — even though the book itself never existed. This is what's called a hallucination.",
+        "answer": "Written by James Holloway, published in 2019 by Nordwind Press.",
+        "isFake": true,
+        "fields": [["Answer produced", "sounds specific and convincing"], ["Reality", "entirely fabricated — the book doesn't exist"]]
+      },
+      {
+        "tag": "WHY IT SOUNDS SO CONFIDENT",
+        "title": "The model has no built-in way to say 'I'm not sure'",
+        "desc": "By default, a model is trained to always produce the most likely next token — not to measure or express how confident it actually is in that answer. A confident tone is not a signal of truth.",
+        "fields": [["What the model measures", "next-token probability"], ["What it does NOT measure by default", "how factually confident it is"]]
+      },
+      {
+        "tag": "DONE",
+        "title": "Common ways to reduce it",
+        "desc": "A few common mitigations: RAG (Retrieval-Augmented Generation), which injects real sources into the prompt before the model answers; lowering the temperature; training models to be willing to say 'I don't know'; and always requiring sources or verification for important claims.",
+        "mitigations": ["RAG (real sources injected into the prompt)", "Lower temperature", "Trained to be willing to say 'I don't know'", "Source verification for important claims"],
+        "fields": [["Not a perfect fix", "reduces, doesn't eliminate, the risk"], ["Safe principle", "always verify important factual claims"]]
+      }
+    ]
+  }
 }

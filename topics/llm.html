@@ -40,7 +40,7 @@ body{
 
 .wrap{max-width:1100px;margin:0 auto;}
 
-header{margin-bottom:36px;}
+header{margin-bottom:28px;}
 .header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
 .eyebrow{
   font-family:'IBM Plex Mono',monospace;
@@ -80,7 +80,21 @@ h1 span{color:var(--neon-pink);}
   color:var(--text-muted);max-width:640px;
 }
 
-/* ===== PIPELINE STAGE ===== */
+/* ===== TABS ===== */
+.tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.tab{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  padding:10px 18px;border-radius:8px;
+  cursor:pointer;font-weight:600;font-size:13.5px;
+  font-family:'Space Grotesk',sans-serif;
+  transition:all 0.2s;
+}
+.tab:hover{background:rgba(255,255,255,0.06);color:var(--text);}
+.tab.active{background:rgba(124,92,255,0.14);border-color:var(--accent);color:#c3b3ff;}
+
+/* ===== PIPELINE / ARENA STAGE ===== */
 .pipeline{
   position:relative;
   border:1px solid var(--border);
@@ -101,9 +115,13 @@ h1 span{color:var(--neon-pink);}
   font-size:11px;letter-spacing:0.12em;
   text-transform:uppercase;color:var(--text-faint);
   margin-bottom:20px;
+  min-height:14px;
 }
 
-/* Flow Container */
+.case-container{display:none;}
+.case-container.active{display:block;}
+
+/* Flow Container (pipeline case) */
 .flow{
   display:flex;align-items:center;justify-content:center;
   gap:12px;flex-wrap:wrap;
@@ -111,7 +129,6 @@ h1 span{color:var(--neon-pink);}
   position:relative;
 }
 
-/* Flow Nodes */
 .flow-node{
   background:var(--surface);
   border:1px solid var(--border);
@@ -138,7 +155,6 @@ h1 span{color:var(--neon-pink);}
   font-size:12px;color:var(--text-faint);margin-top:4px;
 }
 
-/* Arrow between nodes */
 .flow-arrow{
   color:var(--text-faint);
   font-size:20px;
@@ -147,7 +163,7 @@ h1 span{color:var(--neon-pink);}
 }
 .flow-arrow.active{color:var(--accent);}
 
-/* Token Grid (for tokenization step) */
+/* Token Grid (tokenization step) */
 .token-grid{
   display:flex;gap:8px;flex-wrap:wrap;
   justify-content:center;
@@ -170,17 +186,6 @@ h1 span{color:var(--neon-pink);}
   display:block;font-size:9px;color:var(--text-faint);
   margin-top:2px;
 }
-
-/* Attention Lines (SVG) */
-.attention-svg{
-  position:absolute;top:0;left:0;width:100%;height:100%;
-  pointer-events:none;z-index:0;
-}
-.attention-line{
-  fill:none;stroke:var(--accent);stroke-width:1.5;
-  opacity:0;transition:opacity 0.5s;
-}
-.attention-line.show{opacity:0.5;}
 
 /* Embedding Vectors */
 .vector-display{
@@ -228,6 +233,54 @@ h1 span{color:var(--neon-pink);}
 }
 .pred-token.show{opacity:1;transform:scale(1);}
 
+/* ===== AUTOREGRESSIVE ===== */
+.gen-strip{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;font-family:'IBM Plex Mono',monospace;font-size:15px;
+  color:var(--text);text-align:center;margin-bottom:20px;min-height:24px;
+}
+.gen-strip .new-tok{color:var(--neon-pink);font-weight:700;}
+.cand-list{display:flex;flex-direction:column;gap:9px;max-width:380px;margin:0 auto;}
+.cand-row{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+.cand-tok{width:80px;text-align:right;color:var(--text-muted);flex-shrink:0;}
+.cand-row.winner .cand-tok{color:var(--neon-green);font-weight:700;}
+.cand-bar-track{flex:1;height:14px;background:rgba(255,255,255,0.05);border-radius:7px;overflow:hidden;}
+.cand-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--neon-pink));border-radius:7px;transition:width .5s;}
+.cand-row.winner .cand-bar-fill{background:linear-gradient(90deg,var(--neon-green),#39ff85);}
+.cand-pct{width:36px;font-size:11px;color:var(--text-faint);flex-shrink:0;}
+.temp-compare{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;}
+.temp-col{flex:1;min-width:220px;}
+.temp-col-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ===== TRAINING ===== */
+.corpus-line{font-family:'IBM Plex Mono',monospace;font-size:15px;text-align:center;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;}
+.corpus-line .blank{color:var(--neon-orange);font-weight:700;}
+.guess-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:18px;}
+.guess-chip{padding:10px 20px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;}
+.guess-chip.wrong{background:rgba(255,77,166,0.15);border:1px solid var(--neon-pink);color:var(--neon-pink);}
+.guess-chip.correct{background:rgba(57,255,133,0.15);border:1px solid var(--neon-green);color:var(--neon-green);}
+.loss-meter{max-width:320px;margin:0 auto 18px;}
+.capacity-label{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);margin-bottom:6px;}
+.loss-track{height:14px;background:rgba(255,255,255,0.05);border-radius:7px;overflow:hidden;}
+.loss-fill{height:100%;background:linear-gradient(90deg,var(--neon-orange),var(--neon-pink));border-radius:7px;transition:width .6s;}
+.weight-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;max-width:340px;margin:0 auto;}
+.weight-cell{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,0.06);transition:all .4s;}
+.weight-cell.adjusted{background:var(--accent);box-shadow:0 0 8px var(--accent-glow);}
+
+/* ===== CONTEXT WINDOW ===== */
+.capacity-box{max-width:440px;margin:10px auto 0;}
+.capacity-track{height:22px;background:rgba(255,255,255,0.05);border-radius:11px;overflow:hidden;border:1px solid var(--border);}
+.capacity-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--neon-cyan));border-radius:11px;transition:width .5s;}
+.capacity-fill.overflow{background:linear-gradient(90deg,var(--neon-orange),var(--neon-pink));}
+
+/* ===== HALLUCINATION ===== */
+.q-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;color:var(--text);text-align:center;margin-bottom:16px;}
+.answer-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:18px 22px;text-align:center;margin-bottom:16px;}
+.answer-card.fake{border-color:var(--neon-pink);}
+.fake-badge{display:inline-block;margin-top:10px;padding:4px 12px;border-radius:12px;background:rgba(255,77,166,0.15);border:1px solid var(--neon-pink);color:var(--neon-pink);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:700;}
+.mitigation-list{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
+.mitigation-chip{padding:8px 16px;border-radius:16px;background:rgba(0,229,255,0.1);border:1px solid var(--neon-cyan);color:var(--neon-cyan);font-family:'IBM Plex Mono',monospace;font-size:12px;}
+
 /* Story Panel */
 .story-panel{
   background:var(--surface);
@@ -259,7 +312,7 @@ h1 span{color:var(--neon-pink);}
 .data-val{font-size:15px;font-weight:600;color:var(--neon-cyan);}
 
 /* Controls */
-.controls{display:flex;align-items:center;justify-content:center;gap:15px;margin-top:30px;}
+.controls{display:flex;align-items:center;justify-content:center;gap:15px;margin-top:30px;flex-wrap:wrap;}
 button.ctrl-btn{
   background:rgba(255,255,255,0.05);
   border:1px solid var(--border);
@@ -317,41 +370,73 @@ button.ctrl-btn.primary:hover:not(:disabled){
     </div>
   </header>
 
-  <div class="pipeline" id="pipeline">
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="setCase('pipeline')" id="tab-pipeline"></div>
+    <div class="tab" onclick="setCase('autoregressive')" id="tab-autoregressive"></div>
+    <div class="tab" onclick="setCase('training')" id="tab-training"></div>
+    <div class="tab" onclick="setCase('context')" id="tab-context"></div>
+    <div class="tab" onclick="setCase('hallucination')" id="tab-hallucination"></div>
+  </div>
+
+  <div class="pipeline">
     <div class="pipeline-label" id="pipelineLabel"></div>
-    <div class="flow" id="flow">
-      <div class="flow-node" id="fn-input">
-        <span class="icon">💬</span>
-        <div class="label" id="fl-input"></div>
-        <div class="sublabel" id="fsl-input"></div>
+
+    <!-- PIPELINE -->
+    <div class="case-container active" id="c-pipeline">
+      <div class="flow" id="flow">
+        <div class="flow-node" id="fn-input">
+          <span class="icon">💬</span>
+          <div class="label" id="fl-input"></div>
+          <div class="sublabel" id="fsl-input"></div>
+        </div>
+        <div class="flow-arrow" id="fa-1">→</div>
+        <div class="flow-node" id="fn-tokenize">
+          <span class="icon">✂️</span>
+          <div class="label" id="fl-tokenize"></div>
+          <div class="sublabel" id="fsl-tokenize"></div>
+        </div>
+        <div class="flow-arrow" id="fa-2">→</div>
+        <div class="flow-node" id="fn-embed">
+          <span class="icon">📊</span>
+          <div class="label" id="fl-embed"></div>
+          <div class="sublabel" id="fsl-embed"></div>
+        </div>
+        <div class="flow-arrow" id="fa-3">→</div>
+        <div class="flow-node" id="fn-attention">
+          <span class="icon">🧠</span>
+          <div class="label" id="fl-attention"></div>
+          <div class="sublabel" id="fsl-attention"></div>
+        </div>
+        <div class="flow-arrow" id="fa-4">→</div>
+        <div class="flow-node" id="fn-output">
+          <span class="icon">✨</span>
+          <div class="label" id="fl-output"></div>
+          <div class="sublabel" id="fsl-output"></div>
+        </div>
       </div>
-      <div class="flow-arrow" id="fa-1">→</div>
-      <div class="flow-node" id="fn-tokenize">
-        <span class="icon">✂️</span>
-        <div class="label" id="fl-tokenize"></div>
-        <div class="sublabel" id="fsl-tokenize"></div>
-      </div>
-      <div class="flow-arrow" id="fa-2">→</div>
-      <div class="flow-node" id="fn-embed">
-        <span class="icon">📊</span>
-        <div class="label" id="fl-embed"></div>
-        <div class="sublabel" id="fsl-embed"></div>
-      </div>
-      <div class="flow-arrow" id="fa-3">→</div>
-      <div class="flow-node" id="fn-attention">
-        <span class="icon">🧠</span>
-        <div class="label" id="fl-attention"></div>
-        <div class="sublabel" id="fsl-attention"></div>
-      </div>
-      <div class="flow-arrow" id="fa-4">→</div>
-      <div class="flow-node" id="fn-output">
-        <span class="icon">✨</span>
-        <div class="label" id="fl-output"></div>
-        <div class="sublabel" id="fsl-output"></div>
-      </div>
+      <div id="detailArea" style="min-height:100px;"></div>
     </div>
 
-    <div id="detailArea" style="min-height:100px;"></div>
+    <!-- AUTOREGRESSIVE -->
+    <div class="case-container" id="c-autoregressive">
+      <div class="gen-strip" id="ar-genstrip"></div>
+      <div id="ar-detail" style="min-height:100px;"></div>
+    </div>
+
+    <!-- TRAINING -->
+    <div class="case-container" id="c-training">
+      <div id="tr-detail" style="min-height:140px;"></div>
+    </div>
+
+    <!-- CONTEXT WINDOW -->
+    <div class="case-container" id="c-context">
+      <div id="ctx-detail" style="min-height:100px;"></div>
+    </div>
+
+    <!-- HALLUCINATION -->
+    <div class="case-container" id="c-hallucination">
+      <div id="hal-detail" style="min-height:140px;"></div>
+    </div>
 
     <div class="controls">
       <button class="ctrl-btn" id="btnPrev"></button>
@@ -373,8 +458,8 @@ button.ctrl-btn.primary:hover:not(:disabled){
 const LANGS=['id','en'];
 let currentLang=new URLSearchParams(window.location.search).get('lang')||localStorage.getItem('lang')||'en';
 let i18n=null;
-let current=0;
-const totalSteps=5;
+let currentCase='pipeline';
+let currentStep=0;
 
 const flowNodes=['input','tokenize','embed','attention','output'];
 const flowArrows=[1,2,3,4];
@@ -390,7 +475,12 @@ function updateStaticUI(){
   document.getElementById('eyebrow').textContent=i18n.eyebrow;
   document.getElementById('h1').innerHTML=i18n.h1Prefix+'<span>'+i18n.h1Highlight+'</span>'+i18n.h1Suffix;
   document.getElementById('lede').textContent=i18n.lede;
-  document.getElementById('pipelineLabel').textContent=i18n.pipelineLabel;
+
+  document.getElementById('tab-pipeline').textContent=i18n.cases.pipeline;
+  document.getElementById('tab-autoregressive').textContent=i18n.cases.autoregressive;
+  document.getElementById('tab-training').textContent=i18n.cases.training;
+  document.getElementById('tab-context').textContent=i18n.cases.context;
+  document.getElementById('tab-hallucination').textContent=i18n.cases.hallucination;
 
   document.getElementById('fl-input').textContent=i18n.flowNodes.input;
   document.getElementById('fl-tokenize').textContent=i18n.flowNodes.tokenize;
@@ -405,7 +495,6 @@ function updateStaticUI(){
   document.getElementById('fsl-output').textContent=i18n.flowSub.output;
 
   document.getElementById('btnPrev').innerHTML=i18n.controls.prev;
-  document.getElementById('btnNext').innerHTML=i18n.controls.next;
   document.getElementById('btnReset').innerHTML=i18n.controls.reset;
 
   const ls=document.getElementById('langSwitch');
@@ -419,6 +508,7 @@ function updateStaticUI(){
   });
 }
 
+/* ---------- PIPELINE (existing inference walkthrough) ---------- */
 function clearDetail(){
   document.getElementById('detailArea').innerHTML='';
 }
@@ -482,31 +572,149 @@ function showPrediction(){
   });
 }
 
-function renderStep(){
+function resetPipeline(){
+  flowNodes.forEach(n=>document.getElementById('fn-'+n).classList.remove('active'));
+  flowArrows.forEach(a=>document.getElementById('fa-'+a).classList.remove('active'));
   clearDetail();
+}
 
-  // Highlight active flow node
+function renderPipeline(step){
   flowNodes.forEach((n,i)=>{
     const el=document.getElementById('fn-'+n);
     el.classList.remove('active');
-    if(i<=current) el.classList.add('active');
+    if(i<=step) el.classList.add('active');
   });
-
-  // Highlight active arrows
   flowArrows.forEach(a=>{
     const el=document.getElementById('fa-'+a);
     el.classList.remove('active');
-    if(a<=current) el.classList.add('active');
+    if(a<=step) el.classList.add('active');
   });
 
-  // Show detail for current step
-  if(current===1) showTokenization();
-  else if(current===2) showEmbedding();
-  else if(current===3) showAttention();
-  else if(current===4) showPrediction();
+  clearDetail();
+  if(step===1) showTokenization();
+  else if(step===2) showEmbedding();
+  else if(step===3) showAttention();
+  else if(step===4) showPrediction();
+}
 
-  // Update story
-  const data=i18n.steps[current];
+/* ---------- AUTOREGRESSIVE ---------- */
+function renderCandidateList(cands){
+  return '<div class="cand-list">' + cands.map((c,i)=>{
+    const isWinner = i===0;
+    return '<div class="cand-row'+(isWinner?' winner':'')+'"><span class="cand-tok">'+c.tok+'</span>'+
+      '<div class="cand-bar-track"><div class="cand-bar-fill" style="width:'+c.pct+'%"></div></div>'+
+      '<span class="cand-pct">'+c.pct+'%</span></div>';
+  }).join('') + '</div>';
+}
+function resetAutoregressive(){
+  document.getElementById('ar-genstrip').innerHTML='';
+  document.getElementById('ar-detail').innerHTML='';
+}
+function renderAutoregressive(step){
+  const data=i18n.steps.autoregressive[step];
+  document.getElementById('ar-genstrip').innerHTML=(data.generated||'').replace(/\*\*(.+?)\*\*/g,'<span class="new-tok">$1</span>');
+  const detail=document.getElementById('ar-detail');
+  if(data.candidates){
+    detail.innerHTML=renderCandidateList(data.candidates);
+  } else if(data.tempCompare){
+    detail.innerHTML='<div class="temp-compare">'+
+      '<div class="temp-col"><div class="temp-col-label">🥶 Low Temperature</div>'+renderCandidateList(data.tempCompare.low)+'</div>'+
+      '<div class="temp-col"><div class="temp-col-label">🔥 High Temperature</div>'+renderCandidateList(data.tempCompare.high)+'</div>'+
+    '</div>';
+  } else {
+    detail.innerHTML='';
+  }
+}
+
+/* ---------- TRAINING ---------- */
+function resetTraining(){ document.getElementById('tr-detail').innerHTML=''; }
+function renderTraining(step){
+  const data=i18n.steps.training[step];
+  const el=document.getElementById('tr-detail');
+  let html='';
+  if(data.corpus){
+    html+='<div class="corpus-line">'+data.corpus.replace('___','<span class="blank">___</span>')+'</div>';
+  }
+  if(data.guess){
+    html+='<div class="guess-row"><div class="guess-chip wrong">🤖 '+data.guess+'</div>';
+    if(data.correct) html+='<div class="guess-chip correct">✓ '+data.correct+'</div>';
+    html+='</div>';
+  }
+  if(typeof data.loss==='number'){
+    html+='<div class="loss-meter"><div class="capacity-label"><span>LOSS</span><span>'+data.loss+'%</span></div>'+
+      '<div class="loss-track"><div class="loss-fill" style="width:'+data.loss+'%"></div></div></div>';
+  }
+  if(data.weightsAdjusted){
+    html+='<div class="weight-grid" id="weightGrid"></div>';
+  }
+  el.innerHTML=html;
+  if(data.weightsAdjusted){
+    const grid=document.getElementById('weightGrid');
+    for(let i=0;i<48;i++){
+      const cell=document.createElement('div');
+      cell.className='weight-cell';
+      grid.appendChild(cell);
+    }
+    const idxs=[...Array(48).keys()].sort(()=>Math.random()-0.5).slice(0,16);
+    idxs.forEach((idx,i)=>{
+      setTimeout(()=>{ if(grid.children[idx]) grid.children[idx].classList.add('adjusted'); },i*40);
+    });
+  }
+}
+
+/* ---------- CONTEXT WINDOW ---------- */
+function resetContext(){ document.getElementById('ctx-detail').innerHTML=''; }
+function renderContext(step){
+  const data=i18n.steps.context[step];
+  const pct=data.usedPct||0;
+  document.getElementById('ctx-detail').innerHTML=
+    '<div class="capacity-box">'+
+      '<div class="capacity-label"><span>CONTEXT USED</span><span>'+pct+'%</span></div>'+
+      '<div class="capacity-track"><div class="capacity-fill'+(data.overflow?' overflow':'')+'" style="width:'+pct+'%"></div></div>'+
+    '</div>';
+}
+
+/* ---------- HALLUCINATION ---------- */
+function resetHallucination(){ document.getElementById('hal-detail').innerHTML=''; }
+function renderHallucination(step){
+  const steps=i18n.steps.hallucination;
+  const data=steps[step];
+  let html='<div class="q-card">❓ '+steps[0].question+'</div>';
+  if(data.answer){
+    html+='<div class="answer-card'+(data.isFake?' fake':'')+'">'+data.answer+(data.isFake?'<div class="fake-badge">⚠ FABRICATED</div>':'')+'</div>';
+  }
+  if(data.mitigations){
+    html+='<div class="mitigation-list">'+data.mitigations.map(m=>'<div class="mitigation-chip">✓ '+m+'</div>').join('')+'</div>';
+  }
+  document.getElementById('hal-detail').innerHTML=html;
+}
+
+/* ---------- generic step render ---------- */
+const RENDERERS={pipeline:renderPipeline,autoregressive:renderAutoregressive,training:renderTraining,context:renderContext,hallucination:renderHallucination};
+const RESETTERS={pipeline:resetPipeline,autoregressive:resetAutoregressive,training:resetTraining,context:resetContext,hallucination:resetHallucination};
+
+function setCase(c){
+  currentCase=c;
+  currentStep=0;
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+c).classList.add('active');
+
+  document.querySelectorAll('.case-container').forEach(cc=>cc.classList.remove('active'));
+  document.getElementById('c-'+c).classList.add('active');
+
+  document.getElementById('pipelineLabel').textContent = c==='pipeline' ? i18n.pipelineLabel : '';
+
+  RESETTERS[c]();
+  renderStep();
+}
+
+function renderStep(){
+  const steps=i18n.steps[currentCase];
+  const data=steps[currentStep];
+
+  RENDERERS[currentCase](currentStep);
+
   document.getElementById('tag').textContent=data.tag;
   document.getElementById('storyTitle').textContent=data.title;
   document.getElementById('storyDesc').textContent=data.desc;
@@ -517,23 +725,22 @@ function renderStep(){
     grid.innerHTML+='<div class="data-card"><div class="data-label">'+lbl+'</div><div class="data-val">'+val+'</div></div>';
   });
 
-  // Controls & Dots
   const track=document.getElementById('stepTrack');
   track.innerHTML='';
-  for(let i=0;i<totalSteps;i++){
+  for(let i=0;i<steps.length;i++){
     let cls='dot';
-    if(i<current)cls+=' done';
-    if(i===current)cls+=' now';
+    if(i<currentStep)cls+=' done';
+    if(i===currentStep)cls+=' now';
     track.innerHTML+='<div class="'+cls+'"></div>';
   }
 
-  document.getElementById('btnPrev').disabled=(current===0);
-  document.getElementById('btnNext').innerHTML=(current===totalSteps-1)?i18n.controls.done:i18n.controls.next;
+  document.getElementById('btnPrev').disabled=(currentStep===0);
+  document.getElementById('btnNext').innerHTML=(currentStep===steps.length-1)?i18n.controls.done:i18n.controls.next;
 }
 
-document.getElementById('btnNext').onclick=()=>{if(current<totalSteps-1){current++;renderStep();}};
-document.getElementById('btnPrev').onclick=()=>{if(current>0){current--;renderStep();}};
-document.getElementById('btnReset').onclick=()=>{current=0;renderStep();};
+document.getElementById('btnNext').onclick=()=>{const len=i18n.steps[currentCase].length; if(currentStep<len-1){currentStep++;renderStep();}};
+document.getElementById('btnPrev').onclick=()=>{if(currentStep>0){currentStep--;renderStep();}};
+document.getElementById('btnReset').onclick=()=>{currentStep=0;renderStep();};
 
 async function setLang(l){
   if(l===currentLang)return;
@@ -545,6 +752,7 @@ async function setLang(l){
 
   await loadData();
   updateStaticUI();
+  document.getElementById('pipelineLabel').textContent = currentCase==='pipeline' ? i18n.pipelineLabel : '';
   renderStep();
 
   if(window.parent!==window){
@@ -556,7 +764,7 @@ async function init(){
   await loadData();
   updateStaticUI();
   setTimeout(()=>{
-    renderStep();
+    setCase('pipeline');
     document.getElementById('loadingNote').style.opacity='0';
     setTimeout(()=>{
       document.getElementById('loadingNote').style.display='none';

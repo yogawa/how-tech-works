@@ -43,8 +43,8 @@
       "desc": "Four scenarios: the basic publish/subscribe pattern, event queues for async processing, choreography vs orchestration, and why this architecture resists partial failure."
     },
     "multithreading": {
-      "title": "Multithreading: Running Tasks Concurrently",
-      "desc": "How computers split work into multiple threads, and how to prevent chaos when they share data."
+      "title": "Multithreading: Race Conditions, Mutexes, Deadlocks & Thread Pools",
+      "desc": "Four scenarios: a race condition that corrupts data, a mutex lock that fixes it, a deadlock that freezes the program, and why real programs use a thread pool."
     },
     "dockerVsVm": {
       "title": "Docker vs. Virtual Machines",
@@ -59,8 +59,8 @@
       "desc": "Five real scenarios: the basic commit workflow, branching & merging, merge conflicts, reset vs revert, and rebase vs merge."
     },
     "llm": {
-      "title": "LLM: How Large Language Models Think",
-      "desc": "How large language models process a prompt from raw text to response — tokenization, embedding, attention, and token generation."
+      "title": "LLM: Inference, Training, Context Windows & Hallucination",
+      "desc": "Five scenarios: the inference pipeline from prompt to response, the autoregressive generation loop, how a model 'learns' through training, the context window limit, and why LLMs hallucinate."
     }
   }
 }

@@ -43,8 +43,8 @@
       "desc": "Empat skenario: pola publish/subscribe dasar, antrean event untuk pemrosesan async, koreografi vs orkestrasi, dan mengapa arsitektur ini tahan terhadap kegagalan sebagian."
     },
     "multithreading": {
-      "title": "Multithreading: Menjalankan Tugas Bersamaan",
-      "desc": "Bagaimana komputer membagi pekerjaan ke dalam beberapa thread, dan mencegah masalah saat mereka berbagi data."
+      "title": "Multithreading: Race Condition, Mutex, Deadlock & Thread Pool",
+      "desc": "Empat skenario: race condition yang merusak data, mutex lock yang memperbaikinya, deadlock yang membuat program macet, dan kenapa program nyata memakai thread pool."
     },
     "dockerVsVm": {
       "title": "Docker vs. Virtual Machines",
@@ -59,8 +59,8 @@
       "desc": "Lima skenario nyata: alur dasar commit, branching & merging, konflik merge, reset vs revert, dan rebase vs merge."
     },
     "llm": {
-      "title": "LLM: Cara Kerja Large Language Model",
-      "desc": "Bagaimana model bahasa besar memproses prompt dari teks mentah menjadi respons — tokenisasi, embedding, attention, dan generasi token."
+      "title": "LLM: Inferensi, Training, Context Window & Halusinasi",
+      "desc": "Lima skenario: alur inferensi dari prompt sampai respons, autoregressive generation loop, bagaimana model 'belajar' lewat training, batas context window, dan kenapa LLM bisa berhalusinasi."
     }
   }
 }
